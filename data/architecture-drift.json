@@ -1,0 +1,835 @@
+{
+  "generatedAt": "2026-03-07T23:01:53.036Z",
+  "doctrine": "Core decides. Projections explain. Apps render.",
+  "scannedRepos": [
+    "NEXORA",
+    "api",
+    "scarabee",
+    "moniteur",
+    "abetca",
+    "mcp"
+  ],
+  "sources": {
+    "projectionRegistry": "/Users/mohyi/mcp/docs/projection-registry.md",
+    "eventRegistry": "/Users/mohyi/mcp/docs/event-registry.md",
+    "domainBoundaries": "/Users/mohyi/mcp/docs/domain-boundaries.md",
+    "domainOwnership": "/Users/mohyi/mcp/docs/domain-ownership.md",
+    "boundaryAudit": "/Users/mohyi/mcp/generated/reports/domain-boundary-audit-2026-03-07.json",
+    "architectureScore": "/Users/mohyi/mcp/generated/architecture-score.json"
+  },
+  "summary": {
+    "domainsWithDrift": 10,
+    "totalFindings": 570,
+    "criticalDomains": [
+      {
+        "domain": "documents",
+        "projectedScore": 26,
+        "totalFindings": 52,
+        "riskLevel": "critical"
+      },
+      {
+        "domain": "pages",
+        "projectedScore": 26,
+        "totalFindings": 52,
+        "riskLevel": "critical"
+      },
+      {
+        "domain": "analytics",
+        "projectedScore": 26,
+        "totalFindings": 45,
+        "riskLevel": "critical"
+      },
+      {
+        "domain": "workitems",
+        "projectedScore": 34,
+        "totalFindings": 71,
+        "riskLevel": "critical"
+      },
+      {
+        "domain": "payments",
+        "projectedScore": 41,
+        "totalFindings": 70,
+        "riskLevel": "critical"
+      },
+      {
+        "domain": "machine",
+        "projectedScore": 41,
+        "totalFindings": 41,
+        "riskLevel": "critical"
+      },
+      {
+        "domain": "devices",
+        "projectedScore": 49,
+        "totalFindings": 75,
+        "riskLevel": "critical"
+      },
+      {
+        "domain": "comms",
+        "projectedScore": 49,
+        "totalFindings": 72,
+        "riskLevel": "critical"
+      },
+      {
+        "domain": "forms",
+        "projectedScore": 49,
+        "totalFindings": 38,
+        "riskLevel": "critical"
+      },
+      {
+        "domain": "widgets",
+        "projectedScore": 55,
+        "totalFindings": 54,
+        "riskLevel": "critical"
+      }
+    ]
+  },
+  "domains": {
+    "workitems": {
+      "projectionBypass": true,
+      "projectionBypassCount": 16,
+      "crossDomainImports": 2,
+      "unregisteredEvents": 24,
+      "undeclaredProjections": 1,
+      "ownershipViolations": 16,
+      "unauthorizedConsumerReads": 12,
+      "cycles": 0,
+      "totalFindings": 71,
+      "riskLevel": "critical",
+      "healthImpact": {
+        "currentScore": 79,
+        "penalty": 45,
+        "projectedScore": 34
+      },
+      "samples": {
+        "projectionBypass": [
+          "scarabee:mobile/src/app/AppShell.tsx",
+          "scarabee:mobile/src/services/permissionsCenter.ts",
+          "scarabee:mobile/src/services/safetyUx.ts",
+          "scarabee:scripts/ensure-ingestion-subscriptions.mjs",
+          "scarabee:scripts/ensure-mobile-release-proof-settings.mjs",
+          "scarabee:scripts/ensure-rate-limit-settings.mjs",
+          "scarabee:scripts/provision-gmail-watch.mjs",
+          "scarabee:scripts/run-connectors-oauth-start.mjs"
+        ],
+        "crossDomainImports": [
+          "NEXORA:apps/core-platform/src/routes/comms.ts (comms->workitems)",
+          "NEXORA:apps/core-platform/src/routes/devices.ts (devices->workitems)"
+        ],
+        "unregisteredEvents": [
+          "workitems.actions.dispatch",
+          "workitem_action_recorded",
+          "workitems_event_orphan",
+          "workitems_webhook_dispatch_failed",
+          "workitem_record_organization_id_missing",
+          "workitem_record_reason_code_invalid",
+          "workitem_record_decision_version_missing",
+          "action_addrecord",
+          "action_setrecordid",
+          "workitem_id"
+        ],
+        "undeclaredProjections": [
+          "workitem_state"
+        ],
+        "ownershipViolations": [
+          "scarabee:src/app/api/admin/ai-audit/cleanup/route.ts",
+          "scarabee:src/app/api/admin/ingestion/actions/dispatch/run/route.ts",
+          "scarabee:src/app/api/admin/ingestion/actions/execute/route.ts",
+          "scarabee:src/app/api/admin/ingestion/actions/headless/run/route.ts",
+          "scarabee:src/app/api/admin/ingestion/actions/preview/route.ts",
+          "scarabee:src/app/api/admin/ingestion/classification/offline-eval/route.ts",
+          "scarabee:src/app/api/admin/ingestion/connectors/onboarding/channels/route.ts",
+          "scarabee:src/app/api/admin/ingestion/connectors/onboarding/email/route.ts"
+        ],
+        "unauthorizedConsumerReads": [
+          "abetca:packages/billing-product-seo/src/product-seo.ts",
+          "abetca:packages/builder-core/src/builder-state.ts",
+          "abetca:packages/builder-core/src/content-fields.ts",
+          "abetca:packages/builder-core/src/form-schema.ts",
+          "abetca:packages/builder-core/src/template-registry.tsx",
+          "abetca:src/app/(public)/adherer/content.tsx",
+          "abetca:src/app/(public)/aide-et-orientation/content.tsx",
+          "abetca:src/app/(public)/annuaire/content.tsx"
+        ]
+      }
+    },
+    "documents": {
+      "projectionBypass": true,
+      "projectionBypassCount": 16,
+      "crossDomainImports": 1,
+      "unregisteredEvents": 5,
+      "undeclaredProjections": 2,
+      "ownershipViolations": 16,
+      "unauthorizedConsumerReads": 12,
+      "cycles": 0,
+      "totalFindings": 52,
+      "riskLevel": "critical",
+      "healthImpact": {
+        "currentScore": 71,
+        "penalty": 45,
+        "projectedScore": 26
+      },
+      "samples": {
+        "projectionBypass": [
+          "scarabee:src/app/(admin)/admin/page.js",
+          "scarabee:src/app/(public)/access/page.js",
+          "scarabee:src/app/api/admin/ai-governance/route.ts",
+          "scarabee:src/components/messages/messages-client.tsx",
+          "scarabee:src/components/rotating-statements.jsx",
+          "scarabee:src/components/settings/pro-client.js",
+          "scarabee:src/components/shell.jsx",
+          "scarabee:src/lib/stream/channelPriority.ts"
+        ],
+        "crossDomainImports": [
+          "NEXORA:apps/core-platform/src/routes/widgets.ts (widgets->documents)"
+        ],
+        "unregisteredEvents": [
+          "dossier.needs_action",
+          "document.uploaded",
+          "publication_subject",
+          "document_id",
+          "publication_status"
+        ],
+        "undeclaredProjections": [
+          "dossier_status",
+          "publication_status"
+        ],
+        "ownershipViolations": [
+          "moniteur:app/api/admin/examples/upload/presign/route.ts",
+          "moniteur:app/api/admin/examples/upload/route.ts",
+          "moniteur:app/api/client/dossier/[id]/claim/route.ts",
+          "moniteur:app/api/client/dossier/[id]/submit/route.ts",
+          "moniteur:app/api/dossiers/[id]/client-request/route.ts",
+          "moniteur:app/api/dossiers/[id]/documents/route.ts",
+          "moniteur:app/api/dossiers/[id]/export/route.ts",
+          "moniteur:app/api/dossiers/[id]/final-draft/route.ts"
+        ],
+        "unauthorizedConsumerReads": [
+          "scarabee:public/sw.js",
+          "scarabee:src/app/(admin)/admin/page.js",
+          "scarabee:src/app/(public)/access/page.js",
+          "scarabee:src/app/api/admin/ai-governance/route.ts",
+          "scarabee:src/components/messages/messages-client.tsx",
+          "scarabee:src/components/rotating-statements.jsx",
+          "scarabee:src/components/settings/pro-client.js",
+          "scarabee:src/components/shell.jsx"
+        ]
+      }
+    },
+    "forms": {
+      "projectionBypass": true,
+      "projectionBypassCount": 16,
+      "crossDomainImports": 0,
+      "unregisteredEvents": 2,
+      "undeclaredProjections": 0,
+      "ownershipViolations": 8,
+      "unauthorizedConsumerReads": 12,
+      "cycles": 0,
+      "totalFindings": 38,
+      "riskLevel": "critical",
+      "healthImpact": {
+        "currentScore": 94,
+        "penalty": 45,
+        "projectedScore": 49
+      },
+      "samples": {
+        "projectionBypass": [
+          "scarabee:scripts/lib/mobile-qa-report-utils.mjs",
+          "scarabee:scripts/provision-gmail-watch.mjs",
+          "scarabee:scripts/provision-outlook-subscription.mjs",
+          "scarabee:scripts/run-stream-v1-checklist.mjs",
+          "scarabee:scripts/smoke-ingestion-adapters.mjs",
+          "scarabee:src/app/api/admin/ingestion/connectors/onboarding/channels/route.ts",
+          "scarabee:src/app/api/ingestion/adapters/sendgrid/route.ts",
+          "scarabee:src/app/api/ingestion/adapters/whatsapp/route.ts"
+        ],
+        "crossDomainImports": [],
+        "unregisteredEvents": [
+          "form.template.published",
+          "form.template.unpublished"
+        ],
+        "undeclaredProjections": [],
+        "ownershipViolations": [
+          "scarabee:src/app/api/admin/ingestion/connectors/onboarding/channels/route.ts",
+          "scarabee:src/app/api/ingestion/adapters/sendgrid/route.ts",
+          "scarabee:src/app/api/ingestion/adapters/whatsapp/route.ts",
+          "moniteur:app/api/dossiers/[id]/final-draft/route.ts",
+          "moniteur:app/api/dossiers/[id]/save/route.ts",
+          "moniteur:app/api/extract/route.ts",
+          "moniteur:app/api/generate/route.ts",
+          "abetca:src/app/api/admin/media/route.ts"
+        ],
+        "unauthorizedConsumerReads": [
+          "scarabee:scripts/lib/mobile-qa-report-utils.mjs",
+          "scarabee:scripts/provision-gmail-watch.mjs",
+          "scarabee:scripts/provision-outlook-subscription.mjs",
+          "scarabee:scripts/run-stream-v1-checklist.mjs",
+          "scarabee:scripts/smoke-ingestion-adapters.mjs",
+          "scarabee:src/app/api/admin/ingestion/connectors/onboarding/channels/route.ts",
+          "scarabee:src/app/api/ingestion/adapters/sendgrid/route.ts",
+          "scarabee:src/app/api/ingestion/adapters/whatsapp/route.ts"
+        ]
+      }
+    },
+    "pages": {
+      "projectionBypass": true,
+      "projectionBypassCount": 16,
+      "crossDomainImports": 1,
+      "unregisteredEvents": 14,
+      "undeclaredProjections": 0,
+      "ownershipViolations": 9,
+      "unauthorizedConsumerReads": 12,
+      "cycles": 0,
+      "totalFindings": 52,
+      "riskLevel": "critical",
+      "healthImpact": {
+        "currentScore": 71,
+        "penalty": 45,
+        "projectedScore": 26
+      },
+      "samples": {
+        "projectionBypass": [
+          "scarabee:scripts/chat-contract-integration.mjs",
+          "scarabee:scripts/e2e-auth-auto.mjs",
+          "scarabee:scripts/generate-sw.js",
+          "scarabee:scripts/smoke-ingestion-adapters.mjs",
+          "scarabee:src/app/(admin)/admin/page.js",
+          "scarabee:src/app/(app)/messages/c/[cid]/contact/page.tsx",
+          "scarabee:src/app/(app)/messages/c/[cid]/page.tsx",
+          "scarabee:src/app/(app)/p/[id]/page.js"
+        ],
+        "crossDomainImports": [
+          "NEXORA:apps/core-platform/src/routes/pages.ts (pages->machine)"
+        ],
+        "unregisteredEvents": [
+          "page_template_publish_empty",
+          "page_template_publish_empty_section",
+          "page_template_publish_no_published_section",
+          "pages.templates.publish",
+          "pages.templates.unpublish",
+          "page.publish.manual",
+          "page.unpublish.cleanup",
+          "page.publish.cross_instance",
+          "pages.public.render.error",
+          "page_builder_publish_failed"
+        ],
+        "undeclaredProjections": [],
+        "ownershipViolations": [
+          "moniteur:app/api/health-check/route.ts",
+          "abetca:src/app/api/admin/admin-roles/route.ts",
+          "abetca:src/app/api/admin/page-builder/pages/route.ts",
+          "abetca:src/app/api/admin/page-builder/preview/route.ts",
+          "abetca:src/app/api/admin/page-builder/preview-link/route.ts",
+          "abetca:src/app/api/admin/page-builder/revisions/route.ts",
+          "abetca:src/app/api/admin/page-builder/route.ts",
+          "abetca:src/app/api/admin/translations/route.ts"
+        ],
+        "unauthorizedConsumerReads": [
+          "scarabee:scripts/chat-contract-integration.mjs",
+          "scarabee:scripts/e2e-auth-auto.mjs",
+          "scarabee:scripts/e2e-auth.js",
+          "scarabee:scripts/generate-sw.js",
+          "scarabee:scripts/smoke-ingestion-adapters.mjs",
+          "scarabee:src/app/(admin)/admin/page.js",
+          "scarabee:src/app/(app)/marketplace/page.js",
+          "scarabee:src/app/(app)/me/page.js"
+        ]
+      }
+    },
+    "comms": {
+      "projectionBypass": true,
+      "projectionBypassCount": 16,
+      "crossDomainImports": 1,
+      "unregisteredEvents": 25,
+      "undeclaredProjections": 2,
+      "ownershipViolations": 16,
+      "unauthorizedConsumerReads": 12,
+      "cycles": 0,
+      "totalFindings": 72,
+      "riskLevel": "critical",
+      "healthImpact": {
+        "currentScore": 94,
+        "penalty": 45,
+        "projectedScore": 49
+      },
+      "samples": {
+        "projectionBypass": [
+          "scarabee:mobile/src/app/AppShell.tsx",
+          "scarabee:mobile/src/services/push.ts",
+          "scarabee:mobile/src/services/safetyUx.ts",
+          "scarabee:mobile/src/services/stream.ts",
+          "scarabee:mobile/src/services/streamQueue.ts",
+          "scarabee:public/workbox-6058c885.js",
+          "scarabee:public/workbox-6d36aa2b.js",
+          "scarabee:public/workbox-d05d0e50.js"
+        ],
+        "crossDomainImports": [
+          "NEXORA:apps/core-platform/src/routes/comms.ts (comms->workitems)"
+        ],
+        "unregisteredEvents": [
+          "conversation.item.deleted",
+          "conversation.item.delete",
+          "conversation.item.retrieved",
+          "conversation.item.retrieve",
+          "conversation.created",
+          "conversation.item.created",
+          "conversation.item.create",
+          "conversation.item.input_audio_transcription.completed",
+          "conversation.item.input_audio_transcription.delta",
+          "conversation.item.input_audio_transcription.failed"
+        ],
+        "undeclaredProjections": [
+          "message_status",
+          "conversation_context"
+        ],
+        "ownershipViolations": [
+          "scarabee:src/app/api/admin/ai-audit/cleanup/route.ts",
+          "scarabee:src/app/api/admin/gauge-a-test/route.ts",
+          "scarabee:src/app/api/admin/ingestion/connectors/onboarding/channels/route.ts",
+          "scarabee:src/app/api/admin/ingestion/connectors/onboarding/email/route.ts",
+          "scarabee:src/app/api/admin/ingestion/connectors/renewal-queue/run/route.ts",
+          "scarabee:src/app/api/admin/matches/route.ts",
+          "scarabee:src/app/api/admin/mobile/qa/sync/route.ts",
+          "scarabee:src/app/api/admin/reports/route.ts"
+        ],
+        "unauthorizedConsumerReads": [
+          "abetca:packages/builder-core/src/content-fields.ts",
+          "abetca:packages/builder-core/src/form-schema.ts",
+          "abetca:packages/builder-core/src/template-registry.tsx",
+          "abetca:packages/builder-renderer/src/builder-form-runtime.tsx",
+          "abetca:scripts/lib/builder-contract-changes.mjs",
+          "abetca:scripts/lib/builder-contract-manifest.mjs",
+          "abetca:scripts/media-backfill.mjs",
+          "abetca:scripts/run-builder-contract-tests.mjs"
+        ]
+      }
+    },
+    "analytics": {
+      "projectionBypass": true,
+      "projectionBypassCount": 16,
+      "crossDomainImports": 0,
+      "unregisteredEvents": 1,
+      "undeclaredProjections": 0,
+      "ownershipViolations": 16,
+      "unauthorizedConsumerReads": 12,
+      "cycles": 0,
+      "totalFindings": 45,
+      "riskLevel": "critical",
+      "healthImpact": {
+        "currentScore": 71,
+        "penalty": 45,
+        "projectedScore": 26
+      },
+      "samples": {
+        "projectionBypass": [
+          "scarabee:mobile/src/services/networkMetrics.ts",
+          "scarabee:mobile/src/services/stream.ts",
+          "scarabee:scripts/lib/mobile-release-report-utils.mjs",
+          "scarabee:scripts/run-dispatch-actions.mjs",
+          "scarabee:scripts/run-headless-actions.mjs",
+          "scarabee:scripts/run-mobile-network-kpis.mjs",
+          "scarabee:scripts/run-mobile-release-gate.mjs",
+          "scarabee:src/app/api/admin/ingestion/actions/dispatch/stats/route.ts"
+        ],
+        "crossDomainImports": [],
+        "unregisteredEvents": [
+          "kpi-events"
+        ],
+        "undeclaredProjections": [],
+        "ownershipViolations": [
+          "NEXORA:apps/core-platform/src/routes/dashboard.ts",
+          "NEXORA:apps/core-platform/src/routes/widgets-admin-booking-routes.ts",
+          "NEXORA:apps/core-platform/src/routes/widgets-admin-contact-routes.ts",
+          "scarabee:src/app/api/chat/finalize/route.ts",
+          "scarabee:src/app/api/chat/finalize-v2/route.ts",
+          "scarabee:src/app/api/ingestion/event/route.ts",
+          "scarabee:src/app/api/profile/daily-checkpoint/route.ts",
+          "scarabee:src/app/api/profile/micro-update/route.ts"
+        ],
+        "unauthorizedConsumerReads": [
+          "scarabee:mobile/src/services/networkMetrics.ts",
+          "scarabee:mobile/src/services/stream.ts",
+          "scarabee:scripts/lib/mobile-release-report-utils.mjs",
+          "scarabee:scripts/run-dispatch-actions.mjs",
+          "scarabee:scripts/run-headless-actions.mjs",
+          "scarabee:scripts/run-mobile-network-kpis.mjs",
+          "scarabee:scripts/run-mobile-release-gate.mjs",
+          "scarabee:scripts/security-secret-leak-guard.mjs"
+        ]
+      }
+    },
+    "widgets": {
+      "projectionBypass": true,
+      "projectionBypassCount": 16,
+      "crossDomainImports": 1,
+      "unregisteredEvents": 9,
+      "undeclaredProjections": 0,
+      "ownershipViolations": 16,
+      "unauthorizedConsumerReads": 12,
+      "cycles": 0,
+      "totalFindings": 54,
+      "riskLevel": "critical",
+      "healthImpact": {
+        "currentScore": 100,
+        "penalty": 45,
+        "projectedScore": 55
+      },
+      "samples": {
+        "projectionBypass": [
+          "scarabee:public/workbox-6058c885.js",
+          "scarabee:public/workbox-6d36aa2b.js",
+          "scarabee:public/workbox-d05d0e50.js",
+          "scarabee:scripts/audit-env.mjs",
+          "scarabee:scripts/lib/env-resolution.mjs",
+          "scarabee:scripts/lib/mobile-release-report-utils.mjs",
+          "scarabee:scripts/run-connectors-health.mjs",
+          "scarabee:scripts/run-connectors-onboarding.mjs"
+        ],
+        "crossDomainImports": [
+          "NEXORA:apps/core-platform/src/routes/widgets.ts (widgets->documents)"
+        ],
+        "unregisteredEvents": [
+          "widget.machine_context.resolved",
+          "widget.machine_context.unresolved",
+          "widgets-trace-req-001",
+          "widget.created",
+          "widget_droplist",
+          "widget_event",
+          "widget_info",
+          "runtime_guarantees.idempotency.strategy",
+          "widget.event"
+        ],
+        "undeclaredProjections": [],
+        "ownershipViolations": [
+          "scarabee:src/app/api/admin/ai-audit/cleanup/route.ts",
+          "scarabee:src/app/api/admin/ai-governance/channel/route.ts",
+          "scarabee:src/app/api/admin/ai-mediation/offline-eval/route.ts",
+          "scarabee:src/app/api/admin/feature-flags/route.ts",
+          "scarabee:src/app/api/admin/gauge-a-test/route.ts",
+          "scarabee:src/app/api/admin/ingestion/actions/dispatch/run/route.ts",
+          "scarabee:src/app/api/admin/ingestion/actions/execute/route.ts",
+          "scarabee:src/app/api/admin/ingestion/actions/headless/run/route.ts"
+        ],
+        "unauthorizedConsumerReads": [
+          "scarabee:next.config.mjs",
+          "scarabee:public/workbox-6058c885.js",
+          "scarabee:public/workbox-6d36aa2b.js",
+          "scarabee:public/workbox-d05d0e50.js",
+          "scarabee:scripts/audit-env.mjs",
+          "scarabee:scripts/lib/env-resolution.mjs",
+          "scarabee:scripts/lib/mobile-release-report-utils.mjs",
+          "scarabee:scripts/run-connectors-health.mjs"
+        ]
+      }
+    },
+    "machine": {
+      "projectionBypass": true,
+      "projectionBypassCount": 16,
+      "crossDomainImports": 1,
+      "unregisteredEvents": 6,
+      "undeclaredProjections": 2,
+      "ownershipViolations": 4,
+      "unauthorizedConsumerReads": 12,
+      "cycles": 0,
+      "totalFindings": 41,
+      "riskLevel": "critical",
+      "healthImpact": {
+        "currentScore": 86,
+        "penalty": 45,
+        "projectedScore": 41
+      },
+      "samples": {
+        "projectionBypass": [
+          "scarabee:scripts/audit-env.mjs",
+          "scarabee:scripts/run-connectors-health.mjs",
+          "scarabee:scripts/run-connectors-oauth-start.mjs",
+          "scarabee:scripts/run-connectors-onboarding.mjs",
+          "scarabee:scripts/run-dispatch-actions.mjs",
+          "scarabee:scripts/run-headless-actions.mjs",
+          "scarabee:scripts/run-unified-event-idempotency-smoke.mjs",
+          "scarabee:scripts/verify-ingestion-stack.mjs"
+        ],
+        "crossDomainImports": [
+          "NEXORA:apps/core-platform/src/routes/pages.ts (pages->machine)"
+        ],
+        "unregisteredEvents": [
+          "knowledge.entity_created",
+          "knowledge.entity_updated",
+          "knowledge.relation_created",
+          "knowledge.relation_updated",
+          "matching.suggestions_requested",
+          "entity_ref"
+        ],
+        "undeclaredProjections": [
+          "machine_context",
+          "matching_context"
+        ],
+        "ownershipViolations": [
+          "scarabee:src/app/api/admin/ingestion/cross-entity/preview/route.ts",
+          "scarabee:src/app/api/ingestion/event/route.ts",
+          "scarabee:src/app/api/matching/accept/route.ts",
+          "scarabee:src/app/api/matching/ai-public/route.ts"
+        ],
+        "unauthorizedConsumerReads": [
+          "scarabee:scripts/audit-env.mjs",
+          "scarabee:scripts/run-connectors-health.mjs",
+          "scarabee:scripts/run-connectors-oauth-start.mjs",
+          "scarabee:scripts/run-connectors-onboarding.mjs",
+          "scarabee:scripts/run-dispatch-actions.mjs",
+          "scarabee:scripts/run-headless-actions.mjs",
+          "scarabee:scripts/run-unified-event-idempotency-smoke.mjs",
+          "scarabee:scripts/verify-ingestion-stack.mjs"
+        ]
+      }
+    },
+    "devices": {
+      "projectionBypass": true,
+      "projectionBypassCount": 16,
+      "crossDomainImports": 1,
+      "unregisteredEvents": 27,
+      "undeclaredProjections": 3,
+      "ownershipViolations": 16,
+      "unauthorizedConsumerReads": 12,
+      "cycles": 0,
+      "totalFindings": 75,
+      "riskLevel": "critical",
+      "healthImpact": {
+        "currentScore": 94,
+        "penalty": 45,
+        "projectedScore": 49
+      },
+      "samples": {
+        "projectionBypass": [
+          "scarabee:mobile/src/app/AppShell.tsx",
+          "scarabee:mobile/src/services/permissionsCenter.ts",
+          "scarabee:mobile/src/services/permissionsRuntime.ts",
+          "scarabee:mobile/src/services/push.ts",
+          "scarabee:public/workbox-6058c885.js",
+          "scarabee:public/workbox-6d36aa2b.js",
+          "scarabee:public/workbox-d05d0e50.js",
+          "scarabee:scripts/audit-env.mjs"
+        ],
+        "crossDomainImports": [
+          "NEXORA:apps/core-platform/src/routes/devices.ts (devices->workitems)"
+        ],
+        "unregisteredEvents": [
+          "device-ingest-secret-change-me",
+          "device-ingest-shared-secret-change-me",
+          "DEVICE_INGEST_SHARED_SECRET",
+          "devices.ingest_availability",
+          "devices.ingest",
+          "device_event_type_invalid",
+          "device_event_payload_too_large",
+          "device_ingest_not_configured",
+          "device_ingest_signature_missing",
+          "device_ingest_timestamp_invalid"
+        ],
+        "undeclaredProjections": [
+          "push_context",
+          "push_status",
+          "device_context"
+        ],
+        "ownershipViolations": [
+          "scarabee:src/app/api/admin/ingestion/devices/register/route.ts",
+          "scarabee:src/app/api/chat/finalize/route.ts",
+          "scarabee:src/app/api/chat/reset/route.ts",
+          "scarabee:src/app/api/ingestion/adapters/facebook/route.ts",
+          "scarabee:src/app/api/ingestion/adapters/instagram/route.ts",
+          "scarabee:src/app/api/ingestion/adapters/outlook/route.ts",
+          "scarabee:src/app/api/ingestion/adapters/stripe/route.ts",
+          "scarabee:src/app/api/ingestion/device/signal/route.ts"
+        ],
+        "unauthorizedConsumerReads": [
+          "scarabee:mobile/src/app/AppShell.tsx",
+          "scarabee:mobile/src/config/env.ts",
+          "scarabee:mobile/src/services/permissionsCenter.ts",
+          "scarabee:mobile/src/services/permissionsRuntime.ts",
+          "scarabee:mobile/src/services/push.ts",
+          "scarabee:public/workbox-6058c885.js",
+          "scarabee:public/workbox-6d36aa2b.js",
+          "scarabee:public/workbox-d05d0e50.js"
+        ]
+      }
+    },
+    "payments": {
+      "projectionBypass": true,
+      "projectionBypassCount": 16,
+      "crossDomainImports": 0,
+      "unregisteredEvents": 31,
+      "undeclaredProjections": 3,
+      "ownershipViolations": 8,
+      "unauthorizedConsumerReads": 12,
+      "cycles": 0,
+      "totalFindings": 70,
+      "riskLevel": "critical",
+      "healthImpact": {
+        "currentScore": 86,
+        "penalty": 45,
+        "projectedScore": 41
+      },
+      "samples": {
+        "projectionBypass": [
+          "scarabee:scripts/smoke-ingestion-adapters.mjs",
+          "scarabee:src/app/(admin)/admin/page.js",
+          "scarabee:src/app/api/ingestion/adapters/stripe/route.ts",
+          "scarabee:src/components/admin/ai-governance-panel.jsx",
+          "scarabee:src/lib/ingestion/actionAbstraction.ts",
+          "scarabee:src/lib/ingestion/actionExecution.ts",
+          "scarabee:src/lib/ingestion/classification.ts",
+          "scarabee:src/lib/ingestion/connectorHealth.ts"
+        ],
+        "crossDomainImports": [],
+        "unregisteredEvents": [
+          "donation.intent.created",
+          "checkout.session.completed",
+          "stripe_account_webhook_not_configured",
+          "stripe.webhook.checkout.session.completed",
+          "stripe_connect_webhook_not_configured",
+          "payment_intent.canceled",
+          "donation.created",
+          "stripe_js_load_failed",
+          "donation.completed",
+          "STRIPE_PUBLISHABLE_KEY"
+        ],
+        "undeclaredProjections": [
+          "stripe_context",
+          "payment_context",
+          "payment_status"
+        ],
+        "ownershipViolations": [
+          "scarabee:src/app/api/ingestion/adapters/stripe/route.ts",
+          "scarabee:src/app/api/ingestion/event/route.ts",
+          "abetca:src/app/api/admin/billing-catalog/route.ts",
+          "abetca:src/app/api/admin/payments/portal/route.ts",
+          "abetca:src/app/api/admin/payments/reconciliation/route.ts",
+          "abetca:src/app/api/stripe/checkout/route.ts",
+          "abetca:src/app/api/stripe/portal/route.ts",
+          "abetca:src/app/api/stripe/webhook/route.ts"
+        ],
+        "unauthorizedConsumerReads": [
+          "scarabee:next.config.mjs",
+          "scarabee:scripts/security-secret-leak-guard.mjs",
+          "scarabee:scripts/smoke-ingestion-adapters.mjs",
+          "scarabee:src/app/(admin)/admin/page.js",
+          "scarabee:src/app/api/ingestion/adapters/stripe/route.ts",
+          "scarabee:src/app/api/ingestion/event/route.ts",
+          "scarabee:src/components/admin/ai-governance-panel.jsx",
+          "scarabee:src/lib/ingestion/actionAbstraction.ts"
+        ]
+      }
+    }
+  },
+  "scanning": {
+    "perRepo": {
+      "nexora": {
+        "exists": true,
+        "scannedFiles": 2191,
+        "domainHints": {
+          "devices": 116,
+          "pages": 117,
+          "analytics": 55,
+          "machine": 160,
+          "workitems": 135,
+          "documents": 66,
+          "forms": 147,
+          "widgets": 187,
+          "comms": 491,
+          "payments": 77
+        }
+      },
+      "api": {
+        "exists": true,
+        "scannedFiles": 1943,
+        "domainHints": {
+          "forms": 175,
+          "documents": 68,
+          "widgets": 76,
+          "comms": 171,
+          "workitems": 120,
+          "analytics": 118,
+          "devices": 135,
+          "machine": 152,
+          "pages": 41,
+          "payments": 13
+        }
+      },
+      "scarabee": {
+        "exists": true,
+        "scannedFiles": 554,
+        "domainHints": {
+          "workitems": 161,
+          "comms": 166,
+          "devices": 159,
+          "analytics": 38,
+          "widgets": 109,
+          "payments": 37,
+          "documents": 15,
+          "machine": 65,
+          "pages": 59,
+          "forms": 15
+        }
+      },
+      "moniteur": {
+        "exists": true,
+        "scannedFiles": 1224,
+        "domainHints": {
+          "workitems": 131,
+          "pages": 176,
+          "devices": 96,
+          "analytics": 73,
+          "machine": 45,
+          "documents": 184,
+          "forms": 157,
+          "widgets": 66,
+          "comms": 209,
+          "payments": 11
+        }
+      },
+      "abetca": {
+        "exists": true,
+        "scannedFiles": 596,
+        "domainHints": {
+          "payments": 67,
+          "workitems": 63,
+          "devices": 65,
+          "forms": 66,
+          "comms": 102,
+          "documents": 19,
+          "widgets": 6,
+          "pages": 249,
+          "analytics": 71,
+          "machine": 16
+        }
+      },
+      "mcp": {
+        "exists": true,
+        "scannedFiles": 41,
+        "domainHints": {
+          "workitems": 10,
+          "documents": 9,
+          "forms": 9,
+          "pages": 11,
+          "comms": 28,
+          "analytics": 10,
+          "widgets": 13,
+          "machine": 9,
+          "devices": 18,
+          "payments": 10
+        }
+      }
+    },
+    "boundaryTotals": {
+      "domainCross": 0,
+      "routeCross": 4,
+      "cycles": 0
+    }
+  },
+  "linear": {
+    "enabled": false,
+    "team": "",
+    "created": [],
+    "updated": [],
+    "labelsCreated": [],
+    "skipped": [],
+    "errors": []
+  }
+}
