@@ -1,0 +1,6 @@
+# Atlas generated datasets are kept local only
+data/
+
+# Local runtime artifacts
+*.log
+.DS_Store
