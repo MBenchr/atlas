@@ -1,12 +1,18 @@
 const VIEWS = [
-  { id: "overview", label: "Vue d'ensemble", icon: "overview" },
-  { id: "graph", label: "Carte", icon: "graph" },
-  { id: "radar", label: "Radar", icon: "radar" },
-  { id: "projections", label: "Projections", icon: "projection" },
-  { id: "domains", label: "Domaines", icon: "domain" },
-  { id: "alerts", label: "Alertes", icon: "risk" },
-  { id: "history", label: "Historique", icon: "history" },
-  { id: "roadmap", label: "Trajectoire", icon: "roadmap" },
+  { id: "overview", label: "Vue d'ensemble", icon: "overview", group: "pilotage", hint: "Décision rapide" },
+  { id: "alerts", label: "Alertes", icon: "risk", group: "pilotage", hint: "Urgences architecture" },
+  { id: "history", label: "Historique", icon: "history", group: "pilotage", hint: "Évolution temporelle" },
+  { id: "domains", label: "Domaines", icon: "domain", group: "architecture", hint: "Ownership et discipline" },
+  { id: "projections", label: "Projections", icon: "projection", group: "architecture", hint: "Read-path canonique" },
+  { id: "graph", label: "Carte", icon: "graph", group: "architecture", hint: "Dépendances système" },
+  { id: "radar", label: "Radar", icon: "radar", group: "architecture", hint: "Comparaison multi-axes" },
+  { id: "roadmap", label: "Trajectoire", icon: "roadmap", group: "trajectoire", hint: "Plan d'exécution" },
+];
+
+const VIEW_GROUPS = [
+  { id: "pilotage", label: "Pilotage" },
+  { id: "architecture", label: "Architecture" },
+  { id: "trajectoire", label: "Trajectoire" },
 ];
 
 const BADGE_LABELS = {
@@ -37,6 +43,7 @@ const state = {
   activeView: "overview",
   graphFilter: new Set(["repo", "domain", "projection", "provider"]),
   graphZoom: 1,
+  alertSeverityFilter: "all",
   detailListenerBound: false,
   helpMode: false,
   refreshInFlight: false,
@@ -548,8 +555,8 @@ function bindGlobalDetailInteractions() {
             title: "Mise à jour Atlas indisponible",
             definition: "Le bouton nécessite le serveur Atlas Node avec API refresh.",
             why: "Un serveur statique (python) ne peut pas exécuter atlas:generate.",
-            governance: "Utiliser la commande npm run atlas:serve pour activer l’API locale.",
-            action: "Terminal: npm --prefix /Users/mohyi/mcp run atlas:serve",
+            governance: "Utiliser un serveur avec endpoint /api/refresh pour garder données + cockpit synchronisés.",
+            action: "Terminal: /Users/mohyi/atlas/run-atlas-dual.sh",
           });
         } finally {
           state.refreshInFlight = false;
@@ -926,17 +933,66 @@ function renderEvolutionTrends(data) {
   `;
 }
 
+function countAlertsBySeverity(alerts) {
+  const counts = { critical: 0, high: 0, medium: 0, low: 0 };
+  (alerts || []).forEach((alert) => {
+    const key = String(alert?.severity || "low");
+    if (Object.prototype.hasOwnProperty.call(counts, key)) counts[key] += 1;
+  });
+  return counts;
+}
+
+function buildViewIndicators(data) {
+  if (!data) return {};
+  const rows = architectureRows(data);
+  const alerts = buildArchitectureAlerts(data);
+  const severity = countAlertsBySeverity(alerts);
+  const snapshotsCount = Array.isArray(state.history?.snapshots) ? state.history.snapshots.length : 0;
+  const averageScore = Math.round(average(rows.map((row) => row.score || 0)));
+  const pendingRoadmap = (data.roadmap || []).filter((step) => String(step.status || "").toLowerCase() !== "done").length;
+
+  return {
+    overview: `${averageScore}/100`,
+    alerts: `${severity.critical + severity.high}`,
+    history: `${snapshotsCount}`,
+    domains: `${data.domainProfiles?.length || 0}`,
+    projections: `${data.projectionRegistry?.length || 0}`,
+    graph: `${data.graph?.nodes?.length || 0}`,
+    radar: `${data.domainProfiles?.length || 0}`,
+    roadmap: `${pendingRoadmap}`,
+  };
+}
+
 function renderNav() {
   const nav = document.getElementById("nav");
+  const indicators = buildViewIndicators(state.data);
   nav.innerHTML = `
     <h3>Vues Atlas</h3>
-    ${VIEWS.map(
-      (view) => `
-      <button class="${state.activeView === view.id ? "active" : ""}" data-view="${view.id}">
-        <span class="nav-btn-content">${iconSvg(view.icon, "nav-icon")}<span>${view.label}</span></span>
-      </button>
-    `
-    ).join("")}
+    ${VIEW_GROUPS.map((group) => {
+      const views = VIEWS.filter((view) => view.group === group.id);
+      if (!views.length) return "";
+      return `
+        <div class="nav-group">
+          <div class="nav-group-title">${safe(group.label)}</div>
+          ${views
+            .map(
+              (view) => `
+            <button class="${state.activeView === view.id ? "active" : ""}" data-view="${view.id}">
+              <span class="nav-btn-content">
+                ${iconSvg(view.icon, "nav-icon")}
+                <span class="nav-label-wrap">
+                  <span>${safe(view.label)}</span>
+                  <span class="nav-hint">${safe(view.hint || "")}</span>
+                </span>
+              </span>
+              <span class="nav-metric">${safe(indicators[view.id] || "0")}</span>
+            </button>
+          `
+            )
+            .join("")}
+        </div>
+      `;
+    }).join("")}
   `;
   nav.querySelectorAll("button[data-view]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -951,6 +1007,247 @@ function renderDoctrineBanner() {
     <section class="card doctrine-banner">
       <strong>${iconSvg("layers", "inline-icon")} Le Core décide. Les projections expliquent. Les apps affichent.</strong>
       <span class="doctrine-sub">Le cockpit signale toute reconstruction métier locale, write-path parallèle et projection non canonique.</span>
+    </section>
+  `;
+}
+
+function renderExecutiveBoard(data) {
+  const rows = architectureRows(data);
+  const alerts = buildArchitectureAlerts(data);
+  const severity = countAlertsBySeverity(alerts);
+  const driftSummary = state.driftReport?.summary || { domainsWithDrift: 0, totalFindings: 0, criticalDomains: [] };
+  const averageScore = Math.round(average(rows.map((row) => row.score || 0)));
+  const projectedScores = (driftSummary.criticalDomains || [])
+    .map((row) => Number(row.projectedScore))
+    .filter((value) => Number.isFinite(value));
+  const projectedMean = projectedScores.length ? Math.round(average(projectedScores)) : averageScore;
+  const externalRisk = (data.externalServices || []).filter((service) => service.humanOnlyRisk).length;
+  const highRiskDomains = (driftSummary.criticalDomains || []).slice(0, 3).map((row) => row.domain);
+
+  return `
+    <section class="executive-grid">
+      <article class="card executive-card">
+        <h3>État global</h3>
+        <div class="executive-kpi">${averageScore}/100</div>
+        <div class="executive-sub">Moyenne actuelle des domaines</div>
+        <div class="executive-meta">Projection sous dérive: ${projectedMean}/100</div>
+      </article>
+
+      <article class="card executive-card">
+        <h3>Pression opérationnelle</h3>
+        <div class="executive-kpi">${severity.critical + severity.high}</div>
+        <div class="executive-sub">Alertes critiques + hautes</div>
+        <div class="executive-meta">critical=${severity.critical} · high=${severity.high}</div>
+      </article>
+
+      <article class="card executive-card">
+        <h3>Dette architecture</h3>
+        <div class="executive-kpi">${driftSummary.totalFindings}</div>
+        <div class="executive-sub">Constats de dérive cumulés</div>
+        <div class="executive-meta">Domaines touchés: ${driftSummary.domainsWithDrift}</div>
+      </article>
+
+      <article class="card executive-card">
+        <h3>Risque fournisseur</h3>
+        <div class="executive-kpi">${externalRisk}</div>
+        <div class="executive-sub">Services Human-Only exposés</div>
+        <div class="executive-meta">${highRiskDomains.length ? `Focus: ${safe(highRiskDomains.join(", "))}` : "Pas de domaine critique identifié."}</div>
+      </article>
+    </section>
+  `;
+}
+
+function renderExecutiveTrendPreview() {
+  const historyPoints = buildHistoryTrendPoints().slice(-10);
+  return `
+    <section style="margin-top:12px">
+      ${renderTrendChart({
+        title: "Tendance globale (visible immédiatement)",
+        subtitle: "Évolution score moyen, dette (gaps) et pression fournisseur sur les derniers snapshots.",
+        points: historyPoints,
+        series: [
+          { key: "avgScore", label: "Score moyen", color: "#4fd18b", better: "higher", format: (value) => `${Math.round(value)}/100` },
+          { key: "gaps", label: "Écarts", color: "#ef6c57", better: "lower", format: (value) => `${Math.round(value)}` },
+          { key: "services", label: "Services externes", color: "#f2a65a", better: "lower", format: (value) => `${Math.round(value)}` },
+        ],
+        emptyLabel: "Historique insuffisant pour afficher la tendance globale.",
+      })}
+    </section>
+  `;
+}
+
+function renderDataArchitectureBlueprint() {
+  return `
+    <section class="blueprint-grid">
+      <article class="card blueprint-card">
+        <h3>1) Modèle canonique (Core)</h3>
+        <p class="blueprint-sub">Une source de vérité par domaine, sans recalcul métier côté apps.</p>
+        <ul class="blueprint-list">
+          <li>Clés métier stables + versionnage de schéma.</li>
+          <li>Événements métier idempotents horodatés.</li>
+          <li>Contrats d'entrée/sortie validés strictement.</li>
+        </ul>
+      </article>
+      <article class="card blueprint-card">
+        <h3>2) Projections (Read-path)</h3>
+        <p class="blueprint-sub">Des vues matérialisées par usage, pas de logique métier dupliquée.</p>
+        <ul class="blueprint-list">
+          <li>Projection canonique par besoin multi-consommateurs.</li>
+          <li>SLA de fraîcheur explicite (temps de propagation).</li>
+          <li>Traçabilité: source event → projection → écran.</li>
+        </ul>
+      </article>
+      <article class="card blueprint-card">
+        <h3>3) Plan de tables recommandé</h3>
+        <p class="blueprint-sub">Structuration “facts + dimensions” pour analytics et pilotage.</p>
+        <ul class="blueprint-list">
+          <li>Facts: transactions, workflow, événements clés.</li>
+          <li>Dimensions: domaines, équipes, canaux, période.</li>
+          <li>Snapshot journalier pour tendances et comparaisons.</li>
+        </ul>
+      </article>
+      <article class="card blueprint-card">
+        <h3>4) Gouvernance data</h3>
+        <p class="blueprint-sub">Qualité mesurée en continu pour éviter la dérive structurelle.</p>
+        <ul class="blueprint-list">
+          <li>Tests de schéma + contract tests consommateurs.</li>
+          <li>Data quality checks (null, duplicats, drift).</li>
+          <li>Ownership explicite par domaine et projection.</li>
+        </ul>
+      </article>
+    </section>
+  `;
+}
+
+function buildActionPlanner(data) {
+  const { focus } = buildFocusInspirationLists(data);
+  const criticalDomains = state.driftReport?.summary?.criticalDomains || [];
+  const criticalByDomain = new Map(
+    criticalDomains.map((entry) => [String(entry.domain).toLowerCase(), entry])
+  );
+  const hotspots = (data.repos || [])
+    .flatMap((repo) =>
+      (repo.hotspots || [])
+        .slice(0, 4)
+        .map((hotspot) => ({ repo: repo.name, ...hotspot }))
+    )
+    .sort((a, b) => Number(b.loc || 0) - Number(a.loc || 0))
+    .slice(0, 4);
+  const roadmap = [...(data.roadmap || [])].sort((a, b) => Number(b.readiness || 0) - Number(a.readiness || 0));
+
+  const immediate = focus.slice(0, 4).map((item) => {
+    const drift = criticalByDomain.get(String(item.domain).toLowerCase());
+    const projected = drift?.projectedScore;
+    const findings = drift?.totalFindings ?? item.driftFindings;
+    return {
+      title: `Stabiliser ${item.domain}`,
+      why: `Score=${item.score}/100 · dérive=${findings}${typeof projected === "number" ? ` · projeté=${projected}/100` : ""}`,
+      impact: "Réduction immédiate du risque d'architecture et des régressions sur ce domaine.",
+    };
+  });
+
+  const structural = [
+    ...roadmap
+      .slice(0, 3)
+      .map((step) => ({
+        title: step.label,
+        why: `${step.domain} · readiness=${step.readiness}/100 · statut=${step.status}`,
+        impact: "Accélère la trajectoire V3 avec une extraction structurée et traçable.",
+      })),
+    ...hotspots.slice(0, 2).map((spot) => ({
+      title: `Découper ${spot.repo}`,
+      why: `${spot.file} (${spot.loc} LOC)`,
+      impact: "Diminue le couplage local et facilite les tests ciblés.",
+    })),
+  ].slice(0, 5);
+
+  return { immediate, structural };
+}
+
+function renderActionPlanner(data) {
+  const plan = buildActionPlanner(data);
+  return `
+    <section class="action-grid">
+      <article class="card action-column">
+        <h3>Plan immédiat (7 jours)</h3>
+        <p class="action-subtitle">Ce qui réduit le plus vite le risque architecture.</p>
+        ${plan.immediate
+          .map(
+            (item, index) => `
+          <div class="action-item">
+            <div class="action-head">
+              <strong>#${index + 1} ${safe(item.title)}</strong>
+            </div>
+            <div class="action-why">${safe(item.why)}</div>
+            <div class="action-impact">${safe(item.impact)}</div>
+          </div>
+        `
+          )
+          .join("")}
+      </article>
+
+      <article class="card action-column">
+        <h3>Plan structurant (30 jours)</h3>
+        <p class="action-subtitle">Les chantiers qui améliorent durablement la composition du système.</p>
+        ${plan.structural
+          .map(
+            (item, index) => `
+          <div class="action-item">
+            <div class="action-head">
+              <strong>#${index + 1} ${safe(item.title)}</strong>
+            </div>
+            <div class="action-why">${safe(item.why)}</div>
+            <div class="action-impact">${safe(item.impact)}</div>
+          </div>
+        `
+          )
+          .join("")}
+      </article>
+    </section>
+  `;
+}
+
+function renderDomainMatrix(data) {
+  const rows = architectureRows(data)
+    .map((row) => {
+      const drift = getDriftDomain(row.domain);
+      const projected = Number(drift?.healthImpact?.projectedScore ?? row.score);
+      const findings = Number(drift?.totalFindings || 0);
+      const consumers = (row.consumers || []).length;
+      const riskPriority = (100 - row.score) + findings * 3 + Math.max(0, row.score - projected);
+      return { ...row, projected, findings, consumers, riskPriority };
+    })
+    .sort((a, b) => b.riskPriority - a.riskPriority);
+
+  return `
+    <section class="card domain-matrix">
+      <h3>Matrice de pilotage des domaines</h3>
+      <p class="matrix-subtitle">Vision compacte: score actuel, score projeté sous dérive, pression de constats et surface de consommation.</p>
+      <div class="matrix-grid">
+        ${rows
+          .map(
+            (row) => `
+          <article class="matrix-card">
+            <div class="matrix-head">
+              <strong>${safe(row.domain)}</strong>
+              <span class="badge ${row.score < 70 ? "fail" : row.score < 85 ? "warn" : "pass"}">${row.score}/100</span>
+            </div>
+            <div class="matrix-line">
+              <span>Score actuel</span>
+              <span class="mono">${row.score}</span>
+            </div>
+            <div class="matrix-track"><div class="matrix-fill" style="width:${Math.max(0, Math.min(100, row.score))}%"></div></div>
+            <div class="matrix-line">
+              <span>Score projeté</span>
+              <span class="mono ${row.projected < 70 ? "risk-high" : ""}">${row.projected}</span>
+            </div>
+            <div class="matrix-track projected"><div class="matrix-fill" style="width:${Math.max(0, Math.min(100, row.projected))}%"></div></div>
+            <div class="matrix-meta">constats=${row.findings} · consommateurs=${row.consumers} · write=${row.writePath} · proj=${row.projections}</div>
+          </article>
+        `
+          )
+          .join("")}
+      </div>
     </section>
   `;
 }
@@ -1632,9 +1929,34 @@ function buildArchitectureAlerts(data) {
 
 function renderArchitectureAlerts(data) {
   const alerts = buildArchitectureAlerts(data);
+  const counts = countAlertsBySeverity(alerts);
+  const activeFilter = state.alertSeverityFilter || "all";
+  const filteredAlerts = activeFilter === "all" ? alerts : alerts.filter((row) => row.severity === activeFilter);
+  const filterOptions = [
+    { id: "all", label: "Tout", count: alerts.length },
+    { id: "critical", label: "Critical", count: counts.critical },
+    { id: "high", label: "High", count: counts.high },
+    { id: "medium", label: "Medium", count: counts.medium },
+    { id: "low", label: "Low", count: counts.low },
+  ];
+
   return `
     <section class="card">
       <h3>Alertes d'architecture ${tip("Alerte = violation potentielle de la doctrine: write-path hors canon, projection manquante, duplication métier, couplage cross-domain.")}</h3>
+      <div class="alert-toolbar">
+        <div class="alert-filter-group">
+          ${filterOptions
+            .map(
+              (option) => `
+            <button type="button" class="alert-filter-btn ${activeFilter === option.id ? "active" : ""}" data-alert-filter="${option.id}">
+              ${safe(option.label)} <span class="mono">${option.count}</span>
+            </button>
+          `
+            )
+            .join("")}
+        </div>
+        <div class="alert-summary mono">critical=${counts.critical} · high=${counts.high} · medium=${counts.medium} · low=${counts.low}</div>
+      </div>
       <table>
         <thead>
           <tr>
@@ -1645,20 +1967,24 @@ function renderArchitectureAlerts(data) {
           </tr>
         </thead>
         <tbody>
-          ${alerts
-            .map(
-              (row) => `
-            <tr>
-              <td>${safe(row.domain)}</td>
-              <td class="${row.severity === "critical" ? "risk-critical" : row.severity === "high" ? "risk-high" : ""}">
-                ${row.severity === "critical" ? "❌" : row.severity === "high" ? "⚠" : "✔"} ${safe(row.severity)}
-              </td>
-              <td>${safe(row.explanation)}</td>
-              <td>${safe(row.action)}</td>
-            </tr>
-          `
-            )
-            .join("")}
+          ${
+            filteredAlerts.length
+              ? filteredAlerts
+                  .map(
+                    (row) => `
+                <tr>
+                  <td>${safe(row.domain)}</td>
+                  <td class="${row.severity === "critical" ? "risk-critical" : row.severity === "high" ? "risk-high" : ""}">
+                    ${row.severity === "critical" ? "❌" : row.severity === "high" ? "⚠" : "✔"} ${safe(row.severity)}
+                  </td>
+                  <td>${safe(row.explanation)}</td>
+                  <td>${safe(row.action)}</td>
+                </tr>
+              `
+                  )
+                  .join("")
+              : `<tr><td colspan="4" class="mono">Aucune alerte pour le filtre "${safe(activeFilter)}".</td></tr>`
+          }
         </tbody>
       </table>
     </section>
@@ -1976,6 +2302,15 @@ function renderScoresPanel(data) {
   `;
 }
 
+function bindAlertSeverityFilters() {
+  document.querySelectorAll("[data-alert-filter]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.alertSeverityFilter = button.dataset.alertFilter || "all";
+      render();
+    });
+  });
+}
+
 function renderView() {
   const view = document.getElementById("view");
   const data = state.data;
@@ -1986,6 +2321,10 @@ function renderView() {
       html =
         renderDoctrineBanner() +
         guide +
+        renderExecutiveBoard(data) +
+        renderExecutiveTrendPreview() +
+        renderDataArchitectureBlueprint() +
+        renderActionPlanner(data) +
         renderOverview(data) +
         renderFocusInspiration(data) +
         renderScoresPanel(data);
@@ -2000,7 +2339,13 @@ function renderView() {
       html = renderDoctrineBanner() + guide + renderProjectionRegistry(data);
       break;
     case "domains":
-      html = renderDoctrineBanner() + guide + renderDomainOwnership(data) + renderCoreProjectionApps(data) + renderWriteRead(data);
+      html =
+        renderDoctrineBanner() +
+        guide +
+        renderDomainMatrix(data) +
+        renderDomainOwnership(data) +
+        renderCoreProjectionApps(data) +
+        renderWriteRead(data);
       break;
     case "alerts":
       html = renderDoctrineBanner() + guide + renderArchitectureAlerts(data) + renderHotspots(data) + renderSecurity(data) + renderValidation(data);
@@ -2021,6 +2366,7 @@ function renderView() {
   }
   view.innerHTML = html;
   if (state.activeView === "graph") initGraph();
+  if (state.activeView === "alerts") bindAlertSeverityFilters();
 }
 
 function updateDetail(nodeId, data) {
