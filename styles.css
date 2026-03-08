@@ -268,6 +268,30 @@ body {
   font-size: 0.82rem;
 }
 
+.view-guide {
+  margin-top: 12px;
+  border-color: #2f6171;
+  background: linear-gradient(90deg, #143543 0%, #163947 100%);
+}
+
+.view-guide-summary {
+  margin: 0 0 6px;
+  color: #d5e8ee;
+  font-size: 0.88rem;
+}
+
+.view-guide-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.42;
+}
+
+.view-guide-list li + li {
+  margin-top: 3px;
+}
+
 .explainable {
   cursor: default;
 }
@@ -740,6 +764,100 @@ th {
   color: #b7ccd4;
 }
 
+.trend-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(320px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.trend-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trend-subtitle {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.trend-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.trend-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  color: #d8e6ec;
+  font-size: 0.76rem;
+}
+
+.trend-swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.trend-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 1px solid #2a4d5c;
+  border-radius: 8px;
+  background: #0f232b;
+}
+
+.focus-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(300px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.focus-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.focus-subtitle {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.focus-item {
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+
+.focus-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.focus-meta {
+  margin-top: 4px;
+  color: #b7c8cf;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.75rem;
+}
+
+.focus-action {
+  margin-top: 6px;
+  color: #d7e4ea;
+  font-size: 0.79rem;
+}
+
 .dot {
   width: 10px;
   height: 10px;
@@ -768,6 +886,14 @@ th {
   }
 
   .timeline-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .trend-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .focus-grid {
     grid-template-columns: 1fr;
   }
 

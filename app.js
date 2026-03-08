@@ -1,23 +1,23 @@
 const VIEWS = [
-  { id: "overview", label: "Overview", icon: "overview" },
-  { id: "graph", label: "Graph", icon: "graph" },
+  { id: "overview", label: "Vue d'ensemble", icon: "overview" },
+  { id: "graph", label: "Carte", icon: "graph" },
   { id: "radar", label: "Radar", icon: "radar" },
   { id: "projections", label: "Projections", icon: "projection" },
-  { id: "domains", label: "Domains", icon: "domain" },
-  { id: "alerts", label: "Alerts", icon: "risk" },
-  { id: "history", label: "History", icon: "history" },
-  { id: "roadmap", label: "Roadmap", icon: "roadmap" },
+  { id: "domains", label: "Domaines", icon: "domain" },
+  { id: "alerts", label: "Alertes", icon: "risk" },
+  { id: "history", label: "Historique", icon: "history" },
+  { id: "roadmap", label: "Trajectoire", icon: "roadmap" },
 ];
 
 const BADGE_LABELS = {
-  contractsFirst: "Contracts-first",
-  canonicalWritePath: "Canonical write-path",
+  contractsFirst: "Contrats d'abord",
+  canonicalWritePath: "Write-path canonique",
   projectionCanonical: "Projection canonique",
-  noDuplicatedBusinessLogic: "No duplicated business logic",
-  otelReady: "OTel-ready",
-  pkceReady: "PKCE-ready",
-  e2eProof: "E2E proof",
-  moduleReady: "Module-ready",
+  noDuplicatedBusinessLogic: "Pas de logique métier dupliquée",
+  otelReady: "Prêt OTel",
+  pkceReady: "Prêt PKCE",
+  e2eProof: "Preuve E2E",
+  moduleReady: "Prêt modules",
 };
 
 const NODE_META = {
@@ -40,6 +40,81 @@ const state = {
   detailListenerBound: false,
   helpMode: false,
   refreshInFlight: false,
+};
+
+const VIEW_EXPLANATIONS = {
+  overview: {
+    title: "Ce que montre cette vue",
+    summary: "Synthèse exécutive de la santé architecture V3: volume, discipline et risques prioritaires.",
+    bullets: [
+      "KPIs: taille du système, couverture de tests, dette ouverte.",
+      "Scorecards domaines: lisibilité immédiate de l'état par domaine.",
+      "Alertes critiques: ce qui menace la stabilité et l'évolutivité.",
+    ],
+  },
+  graph: {
+    title: "Ce que montre cette vue",
+    summary: "Cartographie des dépendances entre dépôts, domaines, projections et fournisseurs externes.",
+    bullets: [
+      "Filtres: isolez les couches pour éviter les fausses corrélations.",
+      "Nœuds et liens: visualisez les couplages et les zones de concentration.",
+      "Zoom: inspectez précisément les relations à risque.",
+    ],
+  },
+  radar: {
+    title: "Ce que montre cette vue",
+    summary: "Lecture rapide multi-axes de chaque domaine pour détecter les faiblesses structurelles.",
+    bullets: [
+      "Axes: architecture, discipline projection, validation, extraction.",
+      "Couleurs et valeurs: repérez les domaines à traiter en priorité.",
+      "Comparaison transversale: identifiez les écarts entre domaines.",
+    ],
+  },
+  projections: {
+    title: "Ce que montre cette vue",
+    summary: "Registre canonique des projections et de leurs consommateurs.",
+    bullets: [
+      "Projection canonique: une seule source de lecture partagée.",
+      "Statut: canonique, dupliquée ou manquante.",
+      "Responsable explicite: indispensable pour éviter la dérive.",
+    ],
+  },
+  domains: {
+    title: "Ce que montre cette vue",
+    summary: "Composition métier par domaine: responsabilité, flux d'écriture et discipline de lecture.",
+    bullets: [
+      "Responsabilité domaine: qui décide et qui consomme.",
+      "Write-path: validation du chemin d'écriture officiel.",
+      "Signaux de dérive: contournement ou duplication métier.",
+    ],
+  },
+  alerts: {
+    title: "Ce que montre cette vue",
+    summary: "Regroupe les signaux actionnables pour piloter les corrections architecture.",
+    bullets: [
+      "Alertes d'architecture: violations doctrine et couplage.",
+      "Hotspots: fichiers volumineux à découper en priorité.",
+      "Sécurité/validation: signaux d'exécution et preuves techniques.",
+    ],
+  },
+  history: {
+    title: "Ce que montre cette vue",
+    summary: "Évolution dans le temps entre snapshot courant et précédent.",
+    bullets: [
+      "Timeline N, N-1...: tendance dette et complexité.",
+      "Diff domaines: variation des scores de santé.",
+      "Diff dépôt: variation LOC, routes et tests.",
+    ],
+  },
+  roadmap: {
+    title: "Ce que montre cette vue",
+    summary: "Trajectoire d'extraction V3 et écarts restants vers la cible.",
+    bullets: [
+      "Étapes: ordre recommandé d'exécution.",
+      "Niveau de préparation: état réel avant exécution.",
+      "Écarts: blocages qui empêchent l'architecture cible.",
+    ],
+  },
 };
 
 function badgeClass(status) {
@@ -95,10 +170,24 @@ function prettyPercent(value) {
 }
 
 function deltaLabel(now, prev) {
-  if (typeof now !== "number" || typeof prev !== "number") return "n/a";
+  if (typeof now !== "number" || typeof prev !== "number") return "n/d";
   const delta = now - prev;
   const sign = delta > 0 ? "+" : "";
   return `${sign}${delta}`;
+}
+
+function average(values) {
+  const nums = (values || []).map((v) => Number(v)).filter((v) => Number.isFinite(v));
+  if (!nums.length) return 0;
+  return nums.reduce((acc, value) => acc + value, 0) / nums.length;
+}
+
+function formatShortTime(value) {
+  try {
+    return new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return "";
+  }
 }
 
 function getDomainProfile(name) {
@@ -221,7 +310,7 @@ function frenchExplainFromText(rawText) {
         category: "domain",
         definition: `Ce domaine représente un bloc métier du système NEXORA V3. Son score global est ${(arch?.score ?? profile.overallScore)}/100.`,
         why: `Plus ce domaine est propre, plus la plateforme reste stable sur 10 ans (moins de duplication, moins de dérive, meilleure évolutivité).`,
-        governance: `Doctrine: Core decides. Projections explain. Apps render. Les consumers (${(profile.consumers || []).join(", ") || "n/a"}) ne doivent pas redécider la logique métier.`,
+        governance: `Doctrine: le Core décide, les projections expliquent, les apps affichent. Les consommateurs (${(profile.consumers || []).join(", ") || "n/d"}) ne doivent pas redécider la logique métier.`,
         action: arch
           ? `AHS détails: isolation=${arch.domainIsolation}, write-path=${arch.writePath}, projections=${arch.projections}, events=${arch.events}, contracts=${arch.contracts}, observability=${arch.observability}.`
           : `Priorités: contracts-first=${profile.badges.contractsFirst}, write-path=${profile.badges.canonicalWritePath}, projection=${profile.badges.projectionCanonical}, duplication=${profile.badges.noDuplicatedBusinessLogic}.`,
@@ -248,7 +337,7 @@ function frenchExplainFromText(rawText) {
         category: "risk",
         definition: "Indicateur de taille et de concentration de complexité.",
         why: "Les gros hotspots augmentent le risque de régression et ralentissent les extractions de domaine.",
-        governance: "V3 pousse des routes fines et une séparation domain/application/ports/adapters.",
+        governance: "V3 pousse des routes fines et une séparation domaine/application/ports/adapters.",
         action: "Découper progressivement les zones les plus lourdes et ajouter des preuves (tests + E2E).",
       },
     },
@@ -268,9 +357,9 @@ function frenchExplainFromText(rawText) {
       detail: {
         title: "Projection canonique / Read-path",
         category: "projection",
-        definition: "Vue stable dérivée du canon, destinée aux consumers.",
+        definition: "Vue stable dérivée du canon, destinée aux consommateurs.",
         why: "Permet aux apps d’afficher sans recalculer localement la logique métier.",
-        governance: "Core decides. Projections explain. Apps render.",
+        governance: "Le Core décide. Les projections expliquent. Les apps affichent.",
         action: "Quand plusieurs apps lisent un même domaine, une projection canonique explicite est requise.",
       },
     },
@@ -510,10 +599,337 @@ function scoreBar(score) {
   `;
 }
 
+function renderViewGuide(viewId) {
+  const guide = VIEW_EXPLANATIONS[viewId];
+  if (!guide) return "";
+  return `
+    <section class="card view-guide">
+      <h3>${iconSvg("help", "inline-icon")} ${safe(guide.title)}</h3>
+      <p class="view-guide-summary">${safe(guide.summary)}</p>
+      <ul class="view-guide-list">
+        ${(guide.bullets || []).map((item) => `<li>${safe(item)}</li>`).join("")}
+      </ul>
+    </section>
+  `;
+}
+
+function buildHistoryTrendPoints() {
+  const snapshots = Array.isArray(state.history?.snapshots) ? [...state.history.snapshots] : [];
+  return snapshots
+    .sort((a, b) => new Date(a.generatedAt).getTime() - new Date(b.generatedAt).getTime())
+    .map((snapshot, index) => {
+      const summary = snapshot.summary || {};
+      return {
+        index,
+        generatedAt: snapshot.generatedAt,
+        label: formatShortTime(snapshot.generatedAt),
+        domainScores: summary.domainScores || {},
+        avgScore: averageDomainScoreFromMap(summary.domainScores || {}),
+        gaps: Number(summary.gapCount || 0),
+        services: Number(summary.servicesCount || 0),
+        graphNodes: Number(summary.graphNodes || 0),
+        graphEdges: Number(summary.graphEdges || 0),
+      };
+    });
+}
+
+function buildTimeMachineTrendPoints() {
+  const snapshots = Array.isArray(state.timeMachine?.snapshots) ? [...state.timeMachine.snapshots] : [];
+  return snapshots
+    .sort((a, b) => new Date(a.generatedAt).getTime() - new Date(b.generatedAt).getTime())
+    .map((snapshot, index) => ({
+      index,
+      generatedAt: snapshot.generatedAt,
+      label: formatShortTime(snapshot.generatedAt),
+      avgScore: averageDomainScoreFromMap(snapshot.domainScores || {}),
+      gaps: Number(snapshot.gapCount || 0),
+      services: Number(snapshot.externalServicesCount || 0),
+      loc: Number(snapshot.loc || 0),
+      routes: Number(snapshot.routeCount || 0),
+      tests: Number(snapshot.testCount || 0),
+    }));
+}
+
+function formatSigned(value) {
+  const num = Number(value || 0);
+  if (!Number.isFinite(num)) return "n/d";
+  return `${num > 0 ? "+" : ""}${num}`;
+}
+
+function computeSeriesGeometry(values, width, height, padding) {
+  const numeric = values.map((value) => Number(value || 0));
+  if (!numeric.length) return [];
+  const min = Math.min(...numeric);
+  const max = Math.max(...numeric);
+  const innerWidth = width - padding.left - padding.right;
+  const innerHeight = height - padding.top - padding.bottom;
+  const step = numeric.length > 1 ? innerWidth / (numeric.length - 1) : 0;
+  const range = max - min;
+
+  return numeric.map((value, index) => {
+    const x = padding.left + index * step;
+    const ratio = range === 0 ? 0.5 : (value - min) / range;
+    const y = padding.top + (1 - ratio) * innerHeight;
+    return { x, y, value };
+  });
+}
+
+function renderTrendChart({ title, subtitle, points, series, emptyLabel = "Pas assez de données pour tracer une tendance." }) {
+  if (!Array.isArray(points) || points.length < 2) {
+    return `
+      <article class="card trend-card">
+        <h4>${safe(title)}</h4>
+        <p class="trend-subtitle">${safe(subtitle || "")}</p>
+        <p class="mono">${safe(emptyLabel)}</p>
+      </article>
+    `;
+  }
+
+  const width = 860;
+  const height = 230;
+  const padding = { top: 18, right: 16, bottom: 32, left: 28 };
+
+  const seriesShapes = (series || [])
+    .map((config) => {
+      const values = Array.isArray(config.values)
+        ? config.values.map((value) => Number(value || 0))
+        : points.map((point) => Number(point[config.key] || 0));
+      if (!values.length) return null;
+
+      const geometry = computeSeriesGeometry(values, width, height, padding);
+      const path = geometry.map((point, index) => `${index === 0 ? "M" : "L"}${point.x} ${point.y}`).join(" ");
+      const last = values[values.length - 1];
+      const prev = values.length >= 2 ? values[values.length - 2] : last;
+      const delta = Number((last - prev).toFixed(1));
+      const better = config.better === "lower" ? delta <= 0 : delta >= 0;
+      const deltaClass = delta === 0 ? "warn" : better ? "pass" : "fail";
+      const formatter = config.format || ((value) => `${Math.round(value)}`);
+
+      return {
+        ...config,
+        values,
+        geometry,
+        path,
+        lastPoint: geometry[geometry.length - 1],
+        lastLabel: formatter(last),
+        deltaLabel: values.length >= 2 ? formatSigned(delta) : "n/d",
+        deltaClass,
+      };
+    })
+    .filter(Boolean);
+
+  if (!seriesShapes.length) {
+    return `
+      <article class="card trend-card">
+        <h4>${safe(title)}</h4>
+        <p class="trend-subtitle">${safe(subtitle || "")}</p>
+        <p class="mono">${safe(emptyLabel)}</p>
+      </article>
+    `;
+  }
+
+  const tickIndexes = [...new Set([0, Math.floor((points.length - 1) / 2), points.length - 1])];
+  const innerWidth = width - padding.left - padding.right;
+  const tickStep = points.length > 1 ? innerWidth / (points.length - 1) : 0;
+
+  return `
+    <article class="card trend-card">
+      <h4>${safe(title)}</h4>
+      <p class="trend-subtitle">${safe(subtitle || "")}</p>
+      <div class="trend-legend">
+        ${seriesShapes
+          .map(
+            (shape) => `
+          <span class="trend-legend-item">
+            <span class="trend-swatch" style="background:${shape.color}"></span>
+            <span>${safe(shape.label)}</span>
+            <span class="mono">${safe(shape.lastLabel)}</span>
+            <span class="badge ${shape.deltaClass}">Δ ${safe(shape.deltaLabel)}</span>
+          </span>
+        `
+          )
+          .join("")}
+      </div>
+      <svg class="trend-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${safe(title)}">
+        <line x1="${padding.left}" y1="${height - padding.bottom}" x2="${width - padding.right}" y2="${height - padding.bottom}" stroke="#2f5463" stroke-width="1" />
+        <line x1="${padding.left}" y1="${padding.top}" x2="${padding.left}" y2="${height - padding.bottom}" stroke="#2f5463" stroke-width="1" />
+        ${seriesShapes
+          .map(
+            (shape) => `
+          <path d="${shape.path}" fill="none" stroke="${shape.color}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" />
+          <circle cx="${shape.lastPoint.x}" cy="${shape.lastPoint.y}" r="4" fill="${shape.color}" />
+        `
+          )
+          .join("")}
+        ${tickIndexes
+          .map((index) => {
+            const x = padding.left + index * tickStep;
+            const label = points[index]?.label || "";
+            return `
+              <line x1="${x}" y1="${height - padding.bottom}" x2="${x}" y2="${height - padding.bottom + 5}" stroke="#3a6676" stroke-width="1" />
+              <text x="${x}" y="${height - 8}" text-anchor="middle" fill="#9fb2ba" font-size="11">${safe(label)}</text>
+            `;
+          })
+          .join("")}
+      </svg>
+    </article>
+  `;
+}
+
+function buildFocusInspirationLists(data) {
+  const rows = architectureRows(data);
+  const historyPoints = buildHistoryTrendPoints();
+  const first = historyPoints[0]?.domainScores || {};
+  const last = historyPoints[historyPoints.length - 1]?.domainScores || {};
+  const trendByDomain = new Map(
+    [...new Set([...Object.keys(first), ...Object.keys(last)])].map((domain) => [
+      domain,
+      Number((Number(last[domain] || 0) - Number(first[domain] || 0)).toFixed(1)),
+    ])
+  );
+
+  const enriched = rows.map((row) => {
+    const drift = getDriftDomain(row.domain);
+    const driftFindings = Number(drift?.totalFindings || 0);
+    const warningsCount = Array.isArray(row.warnings) ? row.warnings.length : 0;
+    const trend = trendByDomain.get(row.domain) ?? 0;
+    const focusPriority = (100 - row.score) + driftFindings * 4 + warningsCount * 2 + (trend < 0 ? Math.abs(trend) * 2 : 0);
+    const inspirationPriority =
+      row.score +
+      Math.max(0, trend) * 2 +
+      Math.max(0, row.projections - 80) / 2 +
+      Math.max(0, row.contracts - 80) / 2 -
+      driftFindings * 3 -
+      warningsCount;
+
+    return {
+      ...row,
+      driftFindings,
+      warningsCount,
+      trend,
+      focusPriority,
+      inspirationPriority,
+    };
+  });
+
+  const focus = [...enriched].sort((a, b) => b.focusPriority - a.focusPriority).slice(0, 5);
+  const inspiration = [...enriched]
+    .filter((row) => row.score >= 70)
+    .sort((a, b) => b.inspirationPriority - a.inspirationPriority)
+    .slice(0, 5);
+
+  return { focus, inspiration };
+}
+
+function renderFocusInspiration(data) {
+  const { focus, inspiration } = buildFocusInspirationLists(data);
+
+  return `
+    <section class="focus-grid">
+      <article class="card focus-column">
+        <h3>Focus prioritaire</h3>
+        <p class="focus-subtitle">Domaines à corriger en premier pour réduire le risque global.</p>
+        ${focus
+          .map(
+            (item, index) => `
+          <div class="focus-item">
+            <div class="focus-head">
+              <strong>#${index + 1} ${safe(item.domain)}</strong>
+              <span class="badge ${item.score < 70 ? "fail" : "warn"}">score ${item.score}</span>
+            </div>
+            <div class="focus-meta">dérive=${item.driftFindings} · tendance=${formatSigned(item.trend)} · alertes=${item.warningsCount}</div>
+            <div class="focus-action">Action: sécuriser le write-path, éliminer la dérive et stabiliser les contrats/projections.</div>
+          </div>
+        `
+          )
+          .join("")}
+      </article>
+
+      <article class="card focus-column">
+        <h3>Inspiration à répliquer</h3>
+        <p class="focus-subtitle">Domaines les plus solides à prendre comme modèle d’implémentation.</p>
+        ${inspiration
+          .map(
+            (item, index) => `
+          <div class="focus-item">
+            <div class="focus-head">
+              <strong>#${index + 1} ${safe(item.domain)}</strong>
+              <span class="badge pass">score ${item.score}</span>
+            </div>
+            <div class="focus-meta">dérive=${item.driftFindings} · tendance=${formatSigned(item.trend)} · projections=${item.projections}</div>
+            <div class="focus-action">À imiter: ownership clair, projection canonique et discipline de validation.</div>
+          </div>
+        `
+          )
+          .join("")}
+      </article>
+    </section>
+  `;
+}
+
+function renderEvolutionTrends(data) {
+  const historyPoints = buildHistoryTrendPoints().slice(-14);
+  const machinePoints = buildTimeMachineTrendPoints().slice(-12);
+  const { focus } = buildFocusInspirationLists(data);
+  const highlightedDomains = focus.slice(0, 3).map((item) => item.domain);
+  const domainSeries = highlightedDomains.map((domain, index) => ({
+    label: domain,
+    values: historyPoints.map((point) => Number(point.domainScores?.[domain] || 0)),
+    color: ["#5ec8ff", "#31c2a0", "#f2a65a"][index % 3],
+    better: "higher",
+    format: (value) => `${Math.round(value)}/100`,
+  }));
+
+  return `
+    <section class="trend-grid">
+      ${renderTrendChart({
+        title: "Évolution santé & dérive (historique)",
+        subtitle: "Lecture des signaux structurels dans le temps (score moyen et dette).",
+        points: historyPoints,
+        series: [
+          { key: "avgScore", label: "Score moyen", color: "#4fd18b", better: "higher", format: (value) => `${Math.round(value)}/100` },
+          { key: "gaps", label: "Écarts", color: "#ef6c57", better: "lower", format: (value) => `${Math.round(value)}` },
+          { key: "services", label: "Services externes", color: "#f2a65a", better: "lower", format: (value) => `${Math.round(value)}` },
+        ],
+      })}
+
+      ${renderTrendChart({
+        title: "Évolution topologie graphe",
+        subtitle: "Variation des nœuds et des liens d’architecture (couplage global).",
+        points: historyPoints,
+        series: [
+          { key: "graphNodes", label: "Nœuds", color: "#6ce6ad", better: "lower", format: (value) => `${Math.round(value)}` },
+          { key: "graphEdges", label: "Liens", color: "#ffc36a", better: "lower", format: (value) => `${Math.round(value)}` },
+        ],
+      })}
+
+      ${renderTrendChart({
+        title: "Évolution volume technique (snapshots récents)",
+        subtitle: "Complexité opérationnelle: LOC, routes et couverture tests.",
+        points: machinePoints,
+        series: [
+          { key: "loc", label: "LOC", color: "#5ec8ff", better: "lower", format: (value) => `${Math.round(value).toLocaleString()}` },
+          { key: "routes", label: "Routes", color: "#f88377", better: "lower", format: (value) => `${Math.round(value)}` },
+          { key: "tests", label: "Tests", color: "#31c2a0", better: "higher", format: (value) => `${Math.round(value)}` },
+        ],
+        emptyLabel: "Pas assez de snapshots récents pour tracer LOC/routes/tests.",
+      })}
+
+      ${renderTrendChart({
+        title: "Trajectoire des domaines à surveiller",
+        subtitle: "Les domaines Focus sont suivis ici pour valider l'amélioration dans le temps.",
+        points: historyPoints,
+        series: domainSeries,
+        emptyLabel: "Pas assez de données domaines pour tracer la trajectoire Focus.",
+      })}
+    </section>
+  `;
+}
+
 function renderNav() {
   const nav = document.getElementById("nav");
   nav.innerHTML = `
-    <h3>Atlas Views</h3>
+    <h3>Vues Atlas</h3>
     ${VIEWS.map(
       (view) => `
       <button class="${state.activeView === view.id ? "active" : ""}" data-view="${view.id}">
@@ -533,7 +949,7 @@ function renderNav() {
 function renderDoctrineBanner() {
   return `
     <section class="card doctrine-banner">
-      <strong>${iconSvg("layers", "inline-icon")} Core decides. Projections explain. Apps render.</strong>
+      <strong>${iconSvg("layers", "inline-icon")} Le Core décide. Les projections expliquent. Les apps affichent.</strong>
       <span class="doctrine-sub">Le cockpit signale toute reconstruction métier locale, write-path parallèle et projection non canonique.</span>
     </section>
   `;
@@ -553,40 +969,40 @@ function renderOverview(data) {
     <section class="grid">
       <article class="card">
         <div class="kpi">${data.repos.length}</div>
-        <div class="kpi-caption">Repositories scanned</div>
+        <div class="kpi-caption">Dépôts analysés</div>
       </article>
       <article class="card">
         <div class="kpi">${totalLoc.toLocaleString()}</div>
-        <div class="kpi-caption">Scanned LOC (code files)</div>
+        <div class="kpi-caption">Lignes de code scannées (fichiers code)</div>
       </article>
       <article class="card">
         <div class="kpi">${totalRoutes.toLocaleString()}</div>
-        <div class="kpi-caption">Route surfaces detected</div>
+        <div class="kpi-caption">Surfaces de routes détectées</div>
       </article>
       <article class="card">
         <div class="kpi">${totalTests.toLocaleString()}</div>
-        <div class="kpi-caption">Tests (unit+e2e) discovered</div>
+        <div class="kpi-caption">Tests détectés (unitaires + E2E)</div>
       </article>
       <article class="card">
         <div class="kpi">${data.gaps.length}</div>
-        <div class="kpi-caption">Open architectural gaps</div>
+        <div class="kpi-caption">Écarts d'architecture ouverts</div>
       </article>
       <article class="card">
         <div class="kpi">${averageDomainScore}</div>
-        <div class="kpi-caption">Average domain health score</div>
+        <div class="kpi-caption">Score moyen de santé des domaines</div>
       </article>
       <article class="card">
         <div class="kpi">${driftSummary.domainsWithDrift}</div>
-        <div class="kpi-caption">Domains with drift</div>
+        <div class="kpi-caption">Domaines avec dérive</div>
       </article>
       <article class="card">
         <div class="kpi">${driftSummary.totalFindings}</div>
-        <div class="kpi-caption">Total drift findings</div>
+        <div class="kpi-caption">Total des constats de dérive</div>
       </article>
     </section>
 
     <section class="card" style="margin-top:12px">
-      <h3>Doctrine</h3>
+      <h3>Doctrine d'architecture</h3>
       <div class="mono">${safe(data.doctrine.slogan)}</div>
       <div style="margin-top:10px">
         ${data.doctrine.principles.map((p) => `<span class="tag">${safe(p)}</span>`).join("")}
@@ -594,7 +1010,7 @@ function renderOverview(data) {
     </section>
 
     <section style="margin-top:12px">
-      <h3>Top Domain Scorecards</h3>
+      <h3>Scorecards domaines (priorité)</h3>
       <div class="grid">
         ${topDomains
           .map(
@@ -606,10 +1022,10 @@ function renderOverview(data) {
               <span class="badge ${badgeClass(domain.domainIsolation >= 85 ? "pass" : domain.domainIsolation >= 70 ? "warn" : "fail")}">Iso ${domain.domainIsolation}</span>
               <span class="badge ${badgeClass(domain.writePath >= 85 ? "pass" : domain.writePath >= 70 ? "warn" : "fail")}">Write ${domain.writePath}</span>
               <span class="badge ${badgeClass(domain.projections >= 85 ? "pass" : domain.projections >= 70 ? "warn" : "fail")}">Proj ${domain.projections}</span>
-              <span class="badge ${badgeClass(domain.contracts >= 85 ? "pass" : domain.contracts >= 70 ? "warn" : "fail")}">Contract ${domain.contracts}</span>
+              <span class="badge ${badgeClass(domain.contracts >= 85 ? "pass" : domain.contracts >= 70 ? "warn" : "fail")}">Contrats ${domain.contracts}</span>
             </div>
             <div style="margin-top:8px;font-size:0.83rem;color:var(--muted)">
-              Consumers: ${(domain.consumers || []).join(", ") || "n/a"} · Warnings: ${domain.warnings.length}
+              Consommateurs: ${(domain.consumers || []).join(", ") || "n/d"} · Alertes: ${domain.warnings.length}
             </div>
           </article>
         `
@@ -619,7 +1035,7 @@ function renderOverview(data) {
     </section>
 
     <section class="card" style="margin-top:12px">
-      <h3>Architecture Health Alerts</h3>
+      <h3>Alertes santé architecture</h3>
       ${
         critical.length
           ? critical
@@ -637,7 +1053,7 @@ function renderOverview(data) {
     </section>
 
     <section class="card" style="margin-top:12px">
-      <h3>Architecture Drift Alerts</h3>
+      <h3>Alertes dérive architecture</h3>
       ${
         (driftSummary.criticalDomains || []).length
           ? driftSummary.criticalDomains
@@ -645,8 +1061,8 @@ function renderOverview(data) {
               .map(
                 (row) => `
         <div class="detail-item ${row.riskLevel === "critical" ? "risk-critical" : "risk-high"}">
-          <strong>${safe(row.domain)}</strong> · risk=${safe(row.riskLevel)} · projected=${row.projectedScore}/100<br />
-          findings=${row.totalFindings}
+          <strong>${safe(row.domain)}</strong> · risque=${safe(row.riskLevel)} · score projeté=${row.projectedScore}/100<br />
+          constats=${row.totalFindings}
         </div>
       `
               )
@@ -663,13 +1079,21 @@ function renderGraph() {
     <section id="graph-wrap">
       <div id="graph-controls" class="card">
         <div class="graph-controls-left">
-          <strong>${iconSvg("graph", "inline-icon")} Filters</strong>
+          <strong>${iconSvg("graph", "inline-icon")} Filtres</strong>
           ${["repo", "domain", "projection", "provider"]
             .map(
               (type) => `
               <label class="graph-filter-label">
                 <input type="checkbox" data-graph-filter="${type}" ${state.graphFilter.has(type) ? "checked" : ""} />
-                ${iconSvg(NODE_META[type].icon, "tiny-icon")} <span>${type}</span>
+                ${iconSvg(NODE_META[type].icon, "tiny-icon")} <span>${
+                  type === "repo"
+                    ? "Dépôts"
+                    : type === "domain"
+                      ? "Domaines"
+                      : type === "projection"
+                        ? "Projections"
+                        : "Fournisseurs"
+                }</span>
               </label>
             `
             )
@@ -682,17 +1106,17 @@ function renderGraph() {
             <button id="graph-zoom-in" class="graph-zoom-btn" type="button">+</button>
           </div>
           <label class="graph-zoom-label">
-            <span>Zoom</span>
+            <span>Niveau</span>
             <input id="graph-zoom" type="range" min="55" max="220" value="${zoomPercent}" />
           </label>
         </div>
       </div>
-      <div id="graph-canvas" aria-label="Architecture graph canvas"></div>
+      <div id="graph-canvas" aria-label="Canvas de la carte d'architecture"></div>
       <div class="legend">
-        <span><span class="dot" style="background:#5ec8ff"></span>${iconSvg("repo", "tiny-icon")} Repo</span>
-        <span><span class="dot" style="background:#6ce6ad"></span>${iconSvg("domain", "tiny-icon")} Domain</span>
+        <span><span class="dot" style="background:#5ec8ff"></span>${iconSvg("repo", "tiny-icon")} Dépôt</span>
+        <span><span class="dot" style="background:#6ce6ad"></span>${iconSvg("domain", "tiny-icon")} Domaine</span>
         <span><span class="dot" style="background:#ffc36a"></span>${iconSvg("projection", "tiny-icon")} Projection</span>
-        <span><span class="dot" style="background:#f88377"></span>${iconSvg("external", "tiny-icon")} Provider</span>
+        <span><span class="dot" style="background:#f88377"></span>${iconSvg("external", "tiny-icon")} Fournisseur</span>
       </div>
     </section>
   `;
@@ -703,17 +1127,17 @@ function renderCoreProjectionApps(data) {
   const byDomain = new Map(rows.map((row) => [String(row.domain).toLowerCase(), row]));
   return `
     <section class="card">
-      <h3>Core Decides / Projections Explain / Apps Render</h3>
+      <h3>Core décide / Projections expliquent / Apps affichent</h3>
       <table>
         <thead>
           <tr>
-            <th>Domain</th>
+            <th>Domaine</th>
             <th>AHS</th>
-            <th>Core decides</th>
-            <th>Projection status</th>
-            <th>Apps render-only</th>
-            <th>Consumers</th>
-            <th>Drift signals</th>
+            <th>Ce que décide le Core</th>
+            <th>État projection</th>
+            <th>Rendu côté Apps uniquement</th>
+            <th>Consommateurs</th>
+            <th>Signaux de dérive</th>
           </tr>
         </thead>
         <tbody>
@@ -735,7 +1159,7 @@ function renderCoreProjectionApps(data) {
                   <td>${safe((profile.consumers || []).join(", "))}</td>
                   <td class="${drift > 0 ? "risk-high" : ""}">
                     ${drift}
-                    <div class="mono" style="font-size:0.73rem;margin-top:4px">risk=${safe(driftRisk)}${typeof projectedScore === "number" ? ` · projected=${projectedScore}` : ""}</div>
+                    <div class="mono" style="font-size:0.73rem;margin-top:4px">risque=${safe(driftRisk)}${typeof projectedScore === "number" ? ` · projeté=${projectedScore}` : ""}</div>
                   </td>
                 </tr>
               `;
@@ -750,17 +1174,17 @@ function renderCoreProjectionApps(data) {
 function renderWriteRead(data) {
   return `
     <section class="card">
-      <h3>Write Path / Read Path Discipline</h3>
+      <h3>Discipline write-path / read-path</h3>
       <table>
         <thead>
           <tr>
-            <th>Domain</th>
-            <th>Canonical write-path</th>
-            <th>Write outside core</th>
-            <th>Projection signals</th>
-            <th>Drift findings</th>
-            <th>Consumers</th>
-            <th>Status</th>
+            <th>Domaine</th>
+            <th>Write-path canonique</th>
+            <th>Écritures hors Core</th>
+            <th>Signaux de projection</th>
+            <th>Constats de dérive</th>
+            <th>Consommateurs</th>
+            <th>Statut</th>
           </tr>
         </thead>
         <tbody>
@@ -781,7 +1205,7 @@ function renderWriteRead(data) {
                   <td>${projections}</td>
                   <td class="${driftFindings > 0 ? "risk-high" : ""}">
                     ${driftFindings}
-                    <div class="mono" style="font-size:0.73rem;margin-top:4px">projectionBypass=${projectionBypassCount}</div>
+                    <div class="mono" style="font-size:0.73rem;margin-top:4px">contournementsProjection=${projectionBypassCount}</div>
                   </td>
                   <td>${safe((profile.consumers || []).join(", "))}</td>
                   <td><span class="badge ${badgeClass(status)}">${badgeIcon(status)} ${status}</span></td>
@@ -798,15 +1222,15 @@ function renderWriteRead(data) {
 function renderExternal(data) {
   return `
     <section class="card">
-      <h3>External Services</h3>
+      <h3>Services externes</h3>
       <table>
         <thead>
           <tr>
             <th>Service</th>
-            <th>Repos</th>
-            <th>Domains</th>
-            <th>Human-only risk</th>
-            <th>Maturity</th>
+            <th>Dépôts</th>
+            <th>Domaines</th>
+            <th>Risque Human-Only</th>
+            <th>Maturité</th>
           </tr>
         </thead>
         <tbody>
@@ -817,7 +1241,7 @@ function renderExternal(data) {
               <td>${safe(svc.service)}</td>
               <td>${safe((svc.repos || []).join(", "))}</td>
               <td>${safe((svc.domains || []).join(", "))}</td>
-              <td>${svc.humanOnlyRisk ? "Possible" : "Low"}</td>
+              <td>${svc.humanOnlyRisk ? "Présent" : "Faible"}</td>
               <td>${safe(svc.maturity)}</td>
             </tr>
           `
@@ -837,11 +1261,11 @@ function renderSecurity(data) {
           (repo) => `
           <article class="card">
             <h4>${safe(repo.name)}</h4>
-            <div style="margin-bottom:8px;color:var(--muted)">Security/Auth signals</div>
+            <div style="margin-bottom:8px;color:var(--muted)">Signaux sécurité / authentification</div>
             ${(repo.securitySignals || [])
               .map(
                 (signal) =>
-                  `<div class="detail-item"><strong>${safe(signal.signal)}</strong> · <span class="mono">${signal.count}</span> hit(s)</div>`
+                  `<div class="detail-item"><strong>${safe(signal.signal)}</strong> · <span class="mono">${signal.count}</span> occurrence(s)</div>`
               )
               .join("")}
           </article>
@@ -855,14 +1279,14 @@ function renderSecurity(data) {
 function renderValidation(data) {
   return `
     <section class="card">
-      <h3>Validation & Proof Matrix</h3>
+      <h3>Matrice validation & preuves</h3>
       <table>
         <thead>
           <tr>
-            <th>Repo</th>
-            <th>Validation commands</th>
-            <th>Tests found</th>
-            <th>E2E found</th>
+            <th>Dépôt</th>
+            <th>Commandes de validation</th>
+            <th>Tests trouvés</th>
+            <th>E2E trouvés</th>
           </tr>
         </thead>
         <tbody>
@@ -902,9 +1326,9 @@ function renderHotspots(data) {
   return `
     <section class="grid">
       <article class="card">
-        <h3>Top Hotspot Files</h3>
+        <h3>Fichiers hotspot prioritaires</h3>
         <table>
-          <thead><tr><th>Repo</th><th>File</th><th>LOC</th></tr></thead>
+          <thead><tr><th>Dépôt</th><th>Fichier</th><th>LOC</th></tr></thead>
           <tbody>
             ${hotspots
               .map(
@@ -921,7 +1345,7 @@ function renderHotspots(data) {
         </table>
       </article>
       <article class="card">
-        <h3>Detected Risks</h3>
+        <h3>Risques détectés</h3>
         ${risks
           .map(
             (risk) => `
@@ -934,17 +1358,17 @@ function renderHotspots(data) {
           .join("")}
       </article>
       <article class="card">
-        <h3>Architecture Drift Warnings</h3>
+        <h3>Avertissements de dérive architecture</h3>
         ${
           driftDomains.length
             ? `
               <table>
                 <thead>
                   <tr>
-                    <th>Domain</th>
-                    <th>Findings</th>
-                    <th>Risk</th>
-                    <th>Projected score</th>
+                    <th>Domaine</th>
+                    <th>Constats</th>
+                    <th>Risque</th>
+                    <th>Score projeté</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -954,8 +1378,8 @@ function renderHotspots(data) {
                     <tr>
                       <td>${safe(row.domain)}</td>
                       <td class="${row.totalFindings > 0 ? "risk-high" : ""}">${row.totalFindings}</td>
-                      <td class="${row.riskLevel === "critical" ? "risk-critical" : row.riskLevel === "high" ? "risk-high" : ""}">${safe(row.riskLevel || "unknown")}</td>
-                      <td>${row.healthImpact?.projectedScore ?? "n/a"}</td>
+                      <td class="${row.riskLevel === "critical" ? "risk-critical" : row.riskLevel === "high" ? "risk-high" : ""}">${safe(row.riskLevel || "inconnu")}</td>
+                      <td>${row.healthImpact?.projectedScore ?? "n/d"}</td>
                     </tr>
                   `
                     )
@@ -973,15 +1397,15 @@ function renderHotspots(data) {
 function renderRoadmap(data) {
   return `
     <section class="card">
-      <h3>Roadmap / Extraction Trajectory</h3>
+      <h3>Trajectoire d'extraction V3</h3>
       <table>
         <thead>
           <tr>
-            <th>Step</th>
-            <th>Domain</th>
+            <th>Étape</th>
+            <th>Domaine</th>
             <th>Ticket</th>
-            <th>Readiness</th>
-            <th>Status</th>
+            <th>Prêt à exécuter</th>
+            <th>Statut</th>
             <th>Notes</th>
           </tr>
         </thead>
@@ -1010,16 +1434,16 @@ function renderProjectionRegistry(data) {
   const rows = Array.isArray(data.projectionRegistry) ? data.projectionRegistry : [];
   return `
     <section class="card">
-      <h3>Projection Registry ${tip("Source: docs/projection-registry.md. Chaque projection multi-consumer doit être canonique, déclarée, et stable.")}</h3>
+      <h3>Registre des projections ${tip("Source: docs/projection-registry.md. Chaque projection multi-consumer doit être canonique, déclarée, et stable.")}</h3>
       <table>
         <thead>
           <tr>
-            <th>Domain</th>
+            <th>Domaine</th>
             <th>Projection</th>
-            <th>Consumers</th>
-            <th>Owner</th>
-            <th>Canonical</th>
-            <th>Status</th>
+            <th>Consommateurs</th>
+            <th>Responsable</th>
+            <th>Canonique</th>
+            <th>Statut</th>
           </tr>
         </thead>
         <tbody>
@@ -1028,14 +1452,22 @@ function renderProjectionRegistry(data) {
               const status = String(row.status || "unknown");
               const klass = status === "canonical" ? "pass" : status === "duplicate" ? "warn" : "fail";
               const icon = status === "canonical" ? "✔" : status === "duplicate" ? "⚠" : "❌";
+              const statusLabel =
+                status === "canonical"
+                  ? "canonique"
+                  : status === "duplicate"
+                    ? "dupliquée"
+                    : status === "missing"
+                      ? "manquante"
+                      : status;
               return `
                 <tr>
                   <td>${safe(row.domain)}</td>
                   <td class="mono">${safe(row.projection)}</td>
-                  <td>${safe((row.consumers || []).join(", ") || "n/a")}</td>
-                  <td>${safe(row.owner || "n/a")}</td>
-                  <td><span class="badge ${row.canonical ? "pass" : "fail"}">${row.canonical ? "true" : "false"}</span></td>
-                  <td><span class="badge ${klass}">${icon} ${safe(status)}</span></td>
+                  <td>${safe((row.consumers || []).join(", ") || "n/d")}</td>
+                  <td>${safe(row.owner || "n/d")}</td>
+                  <td><span class="badge ${row.canonical ? "pass" : "fail"}">${row.canonical ? "oui" : "non"}</span></td>
+                  <td><span class="badge ${klass}">${icon} ${safe(statusLabel)}</span></td>
                 </tr>
               `;
             })
@@ -1052,16 +1484,16 @@ function renderDomainOwnership(data) {
 
   return `
     <section class="card">
-      <h3>Domain Ownership ${tip("Chaque domaine a un owner unique. Les consumers lisent via projection canonique, sans redécider le métier.")}</h3>
+      <h3>Responsabilités des domaines ${tip("Chaque domaine a un responsable unique. Les consommateurs lisent via projection canonique, sans redécider le métier.")}</h3>
       <table>
         <thead>
           <tr>
-            <th>Domain</th>
-            <th>Owner</th>
-            <th>Consumers</th>
+            <th>Domaine</th>
+            <th>Responsable</th>
+            <th>Consommateurs</th>
             <th>Score</th>
-            <th>Risks</th>
-            <th>Projection coverage</th>
+            <th>Risques</th>
+            <th>Couverture projection</th>
           </tr>
         </thead>
         <tbody>
@@ -1070,15 +1502,15 @@ function renderDomainOwnership(data) {
               const score = Number(scoreByDomain.get(String(row.domain).toLowerCase()) || 0);
               const drift = getDriftDomain(row.domain);
               const riskCount = Number(drift?.totalFindings || 0);
-              const projCoverage = Array.isArray(row.projections) && row.projections.length > 0 ? "covered" : "missing";
+              const projCoverage = Array.isArray(row.projections) && row.projections.length > 0 ? "couverte" : "manquante";
               return `
                 <tr>
                   <td>${safe(row.domain)}</td>
-                  <td>${safe(row.owner || "n/a")}</td>
-                  <td>${safe((row.consumers || []).join(", ") || "n/a")}</td>
-                  <td class="${score < 70 ? "risk-high" : ""}">${score || "n/a"}</td>
+                  <td>${safe(row.owner || "n/d")}</td>
+                  <td>${safe((row.consumers || []).join(", ") || "n/d")}</td>
+                  <td class="${score < 70 ? "risk-high" : ""}">${score || "n/d"}</td>
                   <td class="${riskCount > 0 ? "risk-high" : ""}">${riskCount}</td>
-                  <td><span class="badge ${projCoverage === "covered" ? "pass" : "fail"}">${projCoverage}</span></td>
+                  <td><span class="badge ${projCoverage === "couverte" ? "pass" : "fail"}">${projCoverage}</span></td>
                 </tr>
               `;
             })
@@ -1093,15 +1525,15 @@ function renderRadar(data) {
   const domains = (data.domainProfiles || []).slice().sort((a, b) => a.domain.localeCompare(b.domain));
   const scoreMap = new Map(architectureRows(data).map((row) => [String(row.domain).toLowerCase(), row]));
   const dims = [
-    { key: "architectureHealth", label: "Architecture health" },
-    { key: "projectionDiscipline", label: "Projection discipline" },
-    { key: "validationMaturity", label: "Validation maturity" },
-    { key: "extractionReadiness", label: "Extraction readiness" },
+    { key: "architectureHealth", label: "Santé architecture" },
+    { key: "projectionDiscipline", label: "Discipline projection" },
+    { key: "validationMaturity", label: "Maturité validation" },
+    { key: "extractionReadiness", label: "Prêt pour extraction" },
   ];
 
   return `
     <section class="card">
-      <h3>Architecture Radar ${tip("Radar simplifié par domaine sur 4 axes de pilotage. Permet d’identifier immédiatement les domaines à risque.")}</h3>
+      <h3>Radar d'architecture ${tip("Radar simplifié par domaine sur 4 axes de pilotage. Permet d’identifier immédiatement les domaines à risque.")}</h3>
       <div class="radar-grid">
         ${domains
           .map((domain) => {
@@ -1149,7 +1581,7 @@ function buildArchitectureAlerts(data) {
     alerts.push({
       domain,
       severity,
-      explanation: `Drift détectée (${findings} findings): bypass projection=${row.projectionBypassCount}, events non enregistrés=${row.unregisteredEvents}, cross-domain=${row.crossDomainImports}.`,
+      explanation: `Dérive détectée (${findings} constats): bypass projection=${row.projectionBypassCount}, events non enregistrés=${row.unregisteredEvents}, cross-domain=${row.crossDomainImports}.`,
       action: "Créer/traiter un ticket d’isolation + projection canonique + contract tests.",
     });
   }
@@ -1188,7 +1620,7 @@ function buildArchitectureAlerts(data) {
     alerts.push({
       domain: (svc.domains || [])[0] || "external",
       severity: "medium",
-      explanation: `Risque fournisseur externe (${svc.service}) sur ${(svc.domains || []).join(", ") || "n/a"}.`,
+      explanation: `Risque fournisseur externe (${svc.service}) sur ${(svc.domains || []).join(", ") || "n/d"}.`,
       action: "Vérifier webhook/auth/secret ownership et runbook Human-Only.",
     });
   }
@@ -1202,7 +1634,7 @@ function renderArchitectureAlerts(data) {
   const alerts = buildArchitectureAlerts(data);
   return `
     <section class="card">
-      <h3>Architecture Alerts ${tip("Alerte = violation potentielle de la doctrine: write-path hors canon, projection manquante, duplication métier, couplage cross-domain.")}</h3>
+      <h3>Alertes d'architecture ${tip("Alerte = violation potentielle de la doctrine: write-path hors canon, projection manquante, duplication métier, couplage cross-domain.")}</h3>
       <table>
         <thead>
           <tr>
@@ -1244,8 +1676,8 @@ function renderTimeMachine() {
   if (!snapshots.length) {
     return `
       <section class="card">
-        <h3>Architecture Time Machine</h3>
-        <p>Snapshot history not available yet. Run <span class="mono">npm run atlas:scan</span> to generate timeline snapshots.</p>
+        <h3>Machine à remonter l'architecture</h3>
+        <p>Aucun historique de snapshots disponible. Exécute <span class="mono">npm run atlas:scan</span> pour générer la timeline.</p>
       </section>
     `;
   }
@@ -1286,15 +1718,15 @@ function renderTimeMachine() {
 
   return `
     <section class="card">
-      <h3>Architecture Time Machine ${tip("Timeline N → N-1 → N-2 → N-3. Compare score, complexité et dette architecture entre snapshots.")}</h3>
+      <h3>Machine à remonter l'architecture ${tip("Timeline N → N-1 → N-2 → N-3. Compare score, complexité et dette architecture entre snapshots.")}</h3>
       <div class="timeline-grid">${timelineCards}</div>
       <table style="margin-top:10px">
         <thead>
           <tr>
-            <th>Snapshot</th>
-            <th>Avg score</th>
+            <th>Instantané</th>
+            <th>Score moyen</th>
             <th>Projections</th>
-            <th>Gaps</th>
+            <th>Écarts</th>
             <th>Services</th>
             <th>LOC</th>
             <th>Routes</th>
@@ -1326,14 +1758,14 @@ function renderTimeMachine() {
 function renderGaps(data) {
   return `
     <section class="card">
-      <h3>Current vs Target V3 Gaps</h3>
+      <h3>Écarts actuels vs cible V3</h3>
       <table>
         <thead>
           <tr>
-            <th>Domain</th>
+            <th>Domaine</th>
             <th>Type</th>
-            <th>Severity</th>
-            <th>Gap</th>
+            <th>Sévérité</th>
+            <th>Écart</th>
           </tr>
         </thead>
         <tbody>
@@ -1363,8 +1795,8 @@ function renderHistory(data) {
   if (!history || !Array.isArray(history.snapshots) || history.snapshots.length < 2 || !prev) {
     return `
       <section class="card">
-        <h3>History / Diff</h3>
-        <p>No previous snapshot available yet. Run <span class="mono">npm run atlas:scan</span> again to create N vs N-1 diff.</p>
+        <h3>Historique / Diff</h3>
+        <p>Aucun snapshot précédent disponible. Relance <span class="mono">npm run atlas:scan</span> pour créer le diff N vs N-1.</p>
       </section>
     `;
   }
@@ -1385,9 +1817,9 @@ function renderHistory(data) {
       return `
         <tr>
           <td>${safe(domain)}</td>
-          <td>${typeof now === "number" ? now : "n/a"}</td>
-          <td>${typeof before === "number" ? before : "n/a"}</td>
-          <td class="${cls}">${delta === null ? "n/a" : `${delta > 0 ? "+" : ""}${delta}`}</td>
+          <td>${typeof now === "number" ? now : "n/d"}</td>
+          <td>${typeof before === "number" ? before : "n/d"}</td>
+          <td class="${cls}">${delta === null ? "n/d" : `${delta > 0 ? "+" : ""}${delta}`}</td>
         </tr>
       `;
     })
@@ -1418,17 +1850,17 @@ function renderHistory(data) {
   return `
     <section class="grid">
       <article class="card">
-        <h3>Snapshot Summary (N vs N-1)</h3>
-        <div class="detail-item">Current: <span class="mono">${safe(new Date(data.generatedAt).toLocaleString())}</span></div>
-        <div class="detail-item">Previous: <span class="mono">${safe(new Date(prev.generatedAt).toLocaleString())}</span></div>
-        <div class="detail-item">Gap count: <strong>${currentSummary.gapCount ?? data.gaps.length}</strong> (${deltaLabel(currentSummary.gapCount ?? data.gaps.length, prevSummary.gapCount ?? prev.gaps?.length ?? 0)})</div>
-        <div class="detail-item">Graph nodes: <strong>${currentSummary.graphNodes ?? data.graph.nodes.length}</strong> (${deltaLabel(currentSummary.graphNodes ?? data.graph.nodes.length, prevSummary.graphNodes ?? prev.graph?.nodes?.length ?? 0)})</div>
-        <div class="detail-item">Graph edges: <strong>${currentSummary.graphEdges ?? data.graph.edges.length}</strong> (${deltaLabel(currentSummary.graphEdges ?? data.graph.edges.length, prevSummary.graphEdges ?? prev.graph?.edges?.length ?? 0)})</div>
-        <div class="detail-item">Services detected: <strong>${currentSummary.servicesCount ?? data.externalServices.length}</strong> (${deltaLabel(currentSummary.servicesCount ?? data.externalServices.length, prevSummary.servicesCount ?? prev.externalServices?.length ?? 0)})</div>
+        <h3>Résumé snapshot (N vs N-1)</h3>
+        <div class="detail-item">Actuel: <span class="mono">${safe(new Date(data.generatedAt).toLocaleString())}</span></div>
+        <div class="detail-item">Précédent: <span class="mono">${safe(new Date(prev.generatedAt).toLocaleString())}</span></div>
+        <div class="detail-item">Nombre d'écarts: <strong>${currentSummary.gapCount ?? data.gaps.length}</strong> (${deltaLabel(currentSummary.gapCount ?? data.gaps.length, prevSummary.gapCount ?? prev.gaps?.length ?? 0)})</div>
+        <div class="detail-item">Nœuds graphe: <strong>${currentSummary.graphNodes ?? data.graph.nodes.length}</strong> (${deltaLabel(currentSummary.graphNodes ?? data.graph.nodes.length, prevSummary.graphNodes ?? prev.graph?.nodes?.length ?? 0)})</div>
+        <div class="detail-item">Liens graphe: <strong>${currentSummary.graphEdges ?? data.graph.edges.length}</strong> (${deltaLabel(currentSummary.graphEdges ?? data.graph.edges.length, prevSummary.graphEdges ?? prev.graph?.edges?.length ?? 0)})</div>
+        <div class="detail-item">Services détectés: <strong>${currentSummary.servicesCount ?? data.externalServices.length}</strong> (${deltaLabel(currentSummary.servicesCount ?? data.externalServices.length, prevSummary.servicesCount ?? prev.externalServices?.length ?? 0)})</div>
       </article>
 
       <article class="card">
-        <h3>History Timeline</h3>
+        <h3>Timeline d'historique</h3>
         ${(history.snapshots || [])
           .slice(-10)
           .reverse()
@@ -1437,7 +1869,7 @@ function renderHistory(data) {
             <div class="detail-item">
               <strong>${idx === 0 ? "N" : idx === 1 ? "N-1" : `N-${idx}`}</strong>
               <span class="mono"> ${safe(new Date(snap.generatedAt).toLocaleString())}</span><br />
-              gaps=${snap.summary?.gapCount ?? "n/a"}, domains=${snap.summary?.domainCount ?? "n/a"}, services=${snap.summary?.servicesCount ?? "n/a"}
+              écarts=${snap.summary?.gapCount ?? "n/d"}, domaines=${snap.summary?.domainCount ?? "n/d"}, services=${snap.summary?.servicesCount ?? "n/d"}
             </div>
           `
           )
@@ -1446,14 +1878,14 @@ function renderHistory(data) {
     </section>
 
     <section class="card" style="margin-top:12px">
-      <h3>Domain Score Diff</h3>
+      <h3>Diff des scores par domaine</h3>
       <table>
         <thead>
           <tr>
-            <th>Domain</th>
-            <th>Current</th>
-            <th>Previous</th>
-            <th>Delta</th>
+            <th>Domaine</th>
+            <th>Actuel</th>
+            <th>Précédent</th>
+            <th>Écart</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -1461,11 +1893,11 @@ function renderHistory(data) {
     </section>
 
     <section class="card" style="margin-top:12px">
-      <h3>Repo Delta</h3>
+      <h3>Delta par dépôt</h3>
       <table>
         <thead>
           <tr>
-            <th>Repo</th>
+            <th>Dépôt</th>
             <th>LOC Δ</th>
             <th>Routes Δ</th>
             <th>Tests Δ</th>
@@ -1496,21 +1928,21 @@ function renderScoresPanel(data) {
   const rows = architectureRows(data).sort((a, b) => b.score - a.score);
   return `
     <section class="card" style="margin-top:12px">
-      <h3>Domain Health Scores</h3>
+      <h3>Scores de santé par domaine</h3>
       <table>
         <thead>
           <tr>
-            <th>Domain</th>
-            <th>Overall</th>
-            <th>Domain Isolation</th>
-            <th>Canonical Write Path</th>
-            <th>Projection Discipline</th>
-            <th>Event Stability</th>
-            <th>Contract Discipline</th>
-            <th>Observability</th>
-            <th>Drift Findings</th>
-            <th>Projected Score</th>
-            <th>Warnings</th>
+            <th>Domaine</th>
+            <th>Global</th>
+            <th>Isolation domaine</th>
+            <th>Write-path canonique</th>
+            <th>Discipline projection</th>
+            <th>Stabilité événements</th>
+            <th>Discipline contrats</th>
+            <th>Observabilité</th>
+            <th>Constats dérive</th>
+            <th>Score projeté</th>
+            <th>Alertes</th>
           </tr>
         </thead>
         <tbody>
@@ -1531,7 +1963,7 @@ function renderScoresPanel(data) {
               <td>${d.contracts}</td>
               <td>${d.observability}</td>
               <td class="${driftFindings > 0 ? "risk-high" : ""}">${driftFindings}</td>
-              <td class="${typeof projected === "number" && projected < 70 ? "risk-high" : ""}">${typeof projected === "number" ? projected : "n/a"}</td>
+              <td class="${typeof projected === "number" && projected < 70 ? "risk-high" : ""}">${typeof projected === "number" ? projected : "n/d"}</td>
               <td>${d.warnings.length}</td>
             </tr>
           `;
@@ -1547,34 +1979,45 @@ function renderScoresPanel(data) {
 function renderView() {
   const view = document.getElementById("view");
   const data = state.data;
+  const guide = renderViewGuide(state.activeView);
   let html = "";
   switch (state.activeView) {
     case "overview":
-      html = renderDoctrineBanner() + renderOverview(data) + renderScoresPanel(data);
+      html =
+        renderDoctrineBanner() +
+        guide +
+        renderOverview(data) +
+        renderFocusInspiration(data) +
+        renderScoresPanel(data);
       break;
     case "graph":
-      html = renderDoctrineBanner() + renderGraph();
+      html = renderDoctrineBanner() + guide + renderGraph();
       break;
     case "radar":
-      html = renderDoctrineBanner() + renderRadar(data);
+      html = renderDoctrineBanner() + guide + renderRadar(data);
       break;
     case "projections":
-      html = renderDoctrineBanner() + renderProjectionRegistry(data);
+      html = renderDoctrineBanner() + guide + renderProjectionRegistry(data);
       break;
     case "domains":
-      html = renderDoctrineBanner() + renderDomainOwnership(data) + renderCoreProjectionApps(data) + renderWriteRead(data);
+      html = renderDoctrineBanner() + guide + renderDomainOwnership(data) + renderCoreProjectionApps(data) + renderWriteRead(data);
       break;
     case "alerts":
-      html = renderDoctrineBanner() + renderArchitectureAlerts(data) + renderHotspots(data) + renderSecurity(data) + renderValidation(data);
+      html = renderDoctrineBanner() + guide + renderArchitectureAlerts(data) + renderHotspots(data) + renderSecurity(data) + renderValidation(data);
       break;
     case "history":
-      html = renderDoctrineBanner() + renderTimeMachine() + renderHistory(data);
+      html =
+        renderDoctrineBanner() +
+        guide +
+        renderEvolutionTrends(data) +
+        renderTimeMachine() +
+        renderHistory(data);
       break;
     case "roadmap":
-      html = renderDoctrineBanner() + renderRoadmap(data) + renderGaps(data);
+      html = renderDoctrineBanner() + guide + renderRoadmap(data) + renderGaps(data);
       break;
     default:
-      html = renderDoctrineBanner() + renderOverview(data);
+      html = renderDoctrineBanner() + guide + renderOverview(data);
   }
   view.innerHTML = html;
   if (state.activeView === "graph") initGraph();
@@ -1585,7 +2028,7 @@ function updateDetail(nodeId, data) {
     showDetailPanel({
       title: "Détail du graphe",
       definition: "Clique sur un nœud pour voir son rôle dans l’architecture.",
-      why: "Le graphe sert à visualiser les dépendances entre repos, domaines, projections et providers.",
+      why: "Le graphe sert à visualiser les dépendances entre dépôts, domaines, projections et fournisseurs.",
       governance: "Objectif V3: rendre explicites write-path, read-path et ownership.",
       action: "Active/désactive les filtres puis clique un nœud pour inspecter les liens.",
     });
@@ -1598,16 +2041,16 @@ function updateDetail(nodeId, data) {
     node.type === "domain"
       ? getDriftDomain(String(node.label || "").toLowerCase())
       : null;
-  const kindFr = node.type === "repo" ? "Repository" : node.type === "domain" ? "Domaine" : node.type === "projection" ? "Projection" : "Provider";
+  const kindFr = node.type === "repo" ? "Dépôt" : node.type === "domain" ? "Domaine" : node.type === "projection" ? "Projection" : "Fournisseur";
   showDetailPanel({
     title: `${node.label}`,
     category: node.type === "repo" ? "repo" : node.type === "domain" ? "domain" : node.type === "projection" ? "projection" : "external",
     definition: `Type: ${kindFr}. Ce nœud possède ${links.length} connexion(s) dans la carte.`,
     why: "Comprendre ce nœud aide à éviter les décisions locales qui cassent la cohérence globale.",
-    governance: "Rappel: Core decides. Projections explain. Apps render.",
+    governance: "Rappel: le Core décide, les projections expliquent, les apps affichent.",
     action:
       drift && typeof drift.totalFindings === "number"
-        ? `Drift=${drift.totalFindings}, risk=${drift.riskLevel}, projectedScore=${drift.healthImpact?.projectedScore ?? "n/a"} | ${links.length ? `Relations: ${links
+        ? `Dérive=${drift.totalFindings}, risque=${drift.riskLevel}, scoreProjeté=${drift.healthImpact?.projectedScore ?? "n/d"} | ${links.length ? `Relations: ${links
             .slice(0, 6)
             .map((edge) => `${edge.from} → ${edge.to} (${edge.kind})`)
             .join(" | ")}` : "Aucune relation détectée sur le filtre actuel."}`
@@ -1853,7 +2296,7 @@ async function reloadDataIntoState() {
     state.history = null;
     state.previousSnapshot = null;
   }
-  document.getElementById("generated-at").textContent = `Generated: ${new Date(data.generatedAt).toLocaleString()}`;
+  document.getElementById("generated-at").textContent = `Généré: ${new Date(data.generatedAt).toLocaleString()}`;
 }
 
 async function bootstrap() {
@@ -1861,22 +2304,22 @@ async function bootstrap() {
   try {
     await reloadDataIntoState();
     if (state.architectureScore?.domains && state.driftReport?.domains && state.timeMachine?.snapshots) {
-      health.textContent = "Data: loaded";
+      health.textContent = "Données: complètes";
       health.classList.add("pass");
     } else {
-      health.textContent = "Data: partial";
+      health.textContent = "Données: partielles";
       health.classList.add("warn");
     }
     render();
     setHelpMode(false);
   } catch (error) {
-    health.textContent = "Data: error";
+    health.textContent = "Données: erreur";
     health.classList.add("fail");
     document.getElementById("view").innerHTML = `
       <article class="card">
-        <h3>Atlas data not available</h3>
+        <h3>Données Atlas indisponibles</h3>
         <p class="mono">${safe(error.message)}</p>
-        <p>Run scan + build first.</p>
+        <p>Lance d'abord le scan et la génération des fichiers.</p>
       </article>
     `;
   }
