@@ -32,6 +32,15 @@ body {
   overflow: hidden;
 }
 
+body.embed-mode .topbar {
+  display: none !important;
+}
+
+body.embed-mode .shell {
+  padding: 10px;
+  gap: 10px;
+}
+
 .topbar {
   display: flex;
   justify-content: space-between;

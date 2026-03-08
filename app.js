@@ -49,6 +49,21 @@ const state = {
   refreshInFlight: false,
 };
 
+const runtime = (() => {
+  const params = new URLSearchParams(window.location.search);
+  const embedded = params.get("embed") === "1" || params.get("embed") === "true";
+  return {
+    embedded,
+    fusion: params.get("fusion") === "1" || params.get("fusion") === "true",
+  };
+})();
+
+if (runtime.embedded) {
+  document.body.classList.add("embed-mode");
+}
+
+let externalControlBound = false;
+
 const VIEW_EXPLANATIONS = {
   overview: {
     title: "Ce que montre cette vue",
@@ -556,7 +571,7 @@ function bindGlobalDetailInteractions() {
             definition: "Le bouton nécessite le serveur Atlas Node avec API refresh.",
             why: "Un serveur statique (python) ne peut pas exécuter atlas:generate.",
             governance: "Utiliser un serveur avec endpoint /api/refresh pour garder données + cockpit synchronisés.",
-            action: "Terminal: /Users/mohyi/atlas/run-atlas-dual.sh",
+            action: "Terminal: /Users/mohyi/atlas/run-atlas-fusion.sh",
           });
         } finally {
           state.refreshInFlight = false;
@@ -1003,6 +1018,7 @@ function renderNav() {
 }
 
 function renderDoctrineBanner() {
+  if (runtime.embedded) return "";
   return `
     <section class="card doctrine-banner">
       <strong>${iconSvg("layers", "inline-icon")} Le Core décide. Les projections expliquent. Les apps affichent.</strong>
@@ -1422,9 +1438,12 @@ function renderGraph() {
 function renderCoreProjectionApps(data) {
   const rows = architectureRows(data);
   const byDomain = new Map(rows.map((row) => [String(row.domain).toLowerCase(), row]));
+  const title = runtime.embedded
+    ? "Règles d’architecture par domaine"
+    : "Core décide / Projections expliquent / Apps affichent";
   return `
     <section class="card">
-      <h3>Core décide / Projections expliquent / Apps affichent</h3>
+      <h3>${safe(title)}</h3>
       <table>
         <thead>
           <tr>
@@ -1466,6 +1485,18 @@ function renderCoreProjectionApps(data) {
       </table>
     </section>
   `;
+}
+
+function bindExternalControlChannel() {
+  if (externalControlBound) return;
+  window.addEventListener("message", (event) => {
+    const payload = event?.data;
+    if (!payload || typeof payload !== "object") return;
+    if (payload.type === "atlas-help-mode") {
+      setHelpMode(Boolean(payload.enabled));
+    }
+  });
+  externalControlBound = true;
 }
 
 function renderWriteRead(data) {
@@ -2647,6 +2678,7 @@ async function reloadDataIntoState() {
 
 async function bootstrap() {
   const health = document.getElementById("data-health");
+  bindExternalControlChannel();
   try {
     await reloadDataIntoState();
     if (state.architectureScore?.domains && state.driftReport?.domains && state.timeMachine?.snapshots) {

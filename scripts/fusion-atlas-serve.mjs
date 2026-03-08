@@ -44,7 +44,7 @@ function htmlShell() {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Atlas Fusion · Modern + Legacy</title>
+    <title>Atlas NEXORA V3 · Cockpit d'architecture</title>
     <style>
       :root {
         --bg: #0c1518;
@@ -53,6 +53,9 @@ function htmlShell() {
         --text: #e9f2f4;
         --muted: #9cb2ba;
         --accent: #49c39d;
+        --ok: #4fd18b;
+        --warn: #f2a65a;
+        --fail: #ef6c57;
       }
       * { box-sizing: border-box; }
       body {
@@ -64,35 +67,59 @@ function htmlShell() {
       .topbar {
         border-bottom: 1px solid var(--line);
         background: linear-gradient(90deg, #10212a 0%, #123340 100%);
-        padding: 14px 18px;
+        padding: 10px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .title h1 { margin: 0; font-size: 1rem; }
+      .title p { margin: 3px 0 0; color: var(--muted); font-size: 0.8rem; }
+      .toolbar {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
+        flex-wrap: wrap;
       }
-      .title h1 { margin: 0; font-size: 1.05rem; }
-      .title p { margin: 4px 0 0; color: var(--muted); font-size: 0.85rem; }
       .actions { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
       .btn {
         border: 1px solid #3e6978;
         border-radius: 999px;
         background: #183947;
         color: #ecf8fc;
-        padding: 6px 12px;
+        padding: 5px 11px;
         cursor: pointer;
-        font-size: 0.8rem;
+        font-size: 0.78rem;
       }
       .btn.active { border-color: #4bc29a; background: #18483b; color: #e8fff5; }
-      .meta { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.74rem; }
+      .btn:disabled { opacity: 0.7; cursor: wait; }
+      .meta-line {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .meta-chip {
+        border: 1px solid #355b6a;
+        border-radius: 999px;
+        padding: 4px 10px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.74rem;
+        color: #d7e5ea;
+        background: #173540;
+      }
+      .meta-chip.ok { border-color: #2f6d4d; background: #1c4832; color: #d8ffea; }
+      .meta-chip.warn { border-color: #8a6336; background: #4b3722; color: #ffe8ce; }
+      .meta-chip.fail { border-color: #8a3f36; background: #4b2521; color: #ffd8d4; }
       .layout {
         display: grid;
         grid-template-columns: 1fr;
-        gap: 10px;
-        padding: 10px;
+        gap: 8px;
+        padding: 8px;
       }
       .viewer-single iframe {
         width: 100%;
-        height: calc(100vh - 120px);
+        height: calc(100vh - 138px);
         border: 1px solid var(--line);
         border-radius: 10px;
         background: #0f2028;
@@ -104,7 +131,7 @@ function htmlShell() {
       }
       .viewer-split iframe {
         width: 100%;
-        height: calc(100vh - 120px);
+        height: calc(100vh - 138px);
         border: 1px solid var(--line);
         border-radius: 10px;
         background: #0f2028;
@@ -113,35 +140,45 @@ function htmlShell() {
       .viewer-single.hidden { display: none; }
       @media (max-width: 980px) {
         .viewer-split.active { grid-template-columns: 1fr; }
+        .viewer-single iframe, .viewer-split iframe { height: calc(100vh - 176px); }
       }
     </style>
   </head>
   <body>
     <header class="topbar">
       <div class="title">
-        <h1>Atlas Fusion</h1>
-        <p>Un seul site, deux modes: Modern UX et Legacy Map, avec refresh unifié.</p>
+        <h1>Atlas NEXORA V3 · Cockpit d'architecture</h1>
+        <p>Navigation unifiée: mode Modern, mode Legacy, comparaison, refresh global et aide globale.</p>
       </div>
-      <div class="actions">
-        <button id="mode-modern" class="btn active" type="button">Mode Modern</button>
-        <button id="mode-legacy" class="btn" type="button">Mode Legacy</button>
-        <button id="mode-split" class="btn" type="button">Comparaison</button>
-        <button id="refresh" class="btn" type="button">Mettre à jour</button>
-        <span id="status" class="meta">status=idle</span>
+      <div class="toolbar">
+        <div class="actions">
+          <button id="mode-modern" class="btn active" type="button">Mode moderne</button>
+          <button id="mode-legacy" class="btn" type="button">Mode legacy</button>
+          <button id="mode-split" class="btn" type="button">Comparaison</button>
+          <button id="refresh" class="btn" type="button">Mettre à jour</button>
+          <button id="help-toggle" class="btn" type="button">Aide: OFF</button>
+        </div>
+        <div class="meta-line">
+          <span id="meta-updated" class="meta-chip">Mise à jour: -</span>
+          <span id="meta-data" class="meta-chip">Données: chargement...</span>
+          <span id="meta-status" class="meta-chip">Statut: prêt</span>
+        </div>
       </div>
     </header>
 
     <main class="layout">
       <section id="single" class="viewer-single">
-        <iframe id="single-frame" src="/modern/" title="Atlas modern"></iframe>
+        <iframe id="single-frame" src="/modern/?embed=1&fusion=1" title="Atlas modern"></iframe>
       </section>
       <section id="split" class="viewer-split">
-        <iframe id="modern-frame" src="/modern/" title="Atlas modern split"></iframe>
-        <iframe id="legacy-frame" src="/legacy/" title="Atlas legacy split"></iframe>
+        <iframe id="modern-frame" src="/modern/?embed=1&fusion=1" title="Atlas modern split"></iframe>
+        <iframe id="legacy-frame" src="/legacy/?embed=1&fusion=1" title="Atlas legacy split"></iframe>
       </section>
     </main>
 
     <script>
+      const MODERN_SRC = "/modern/?embed=1&fusion=1";
+      const LEGACY_SRC = "/legacy/?embed=1&fusion=1";
       const modeModern = document.getElementById("mode-modern");
       const modeLegacy = document.getElementById("mode-legacy");
       const modeSplit = document.getElementById("mode-split");
@@ -151,41 +188,181 @@ function htmlShell() {
       const modernFrame = document.getElementById("modern-frame");
       const legacyFrame = document.getElementById("legacy-frame");
       const refreshBtn = document.getElementById("refresh");
-      const status = document.getElementById("status");
+      const helpToggle = document.getElementById("help-toggle");
+      const metaUpdated = document.getElementById("meta-updated");
+      const metaData = document.getElementById("meta-data");
+      const metaStatus = document.getElementById("meta-status");
+
+      let currentMode = "modern";
+      let helpEnabled = false;
+
+      function setChip(element, text, level) {
+        element.textContent = text;
+        element.classList.remove("ok", "warn", "fail");
+        if (level) element.classList.add(level);
+      }
+
+      function formatDate(value) {
+        if (!value) return "-";
+        try {
+          return new Date(value).toLocaleString("fr-FR");
+        } catch {
+          return String(value);
+        }
+      }
+
+      function stripInnerHeader(frame) {
+        try {
+          const doc = frame.contentDocument;
+          if (!doc) return;
+          const topbar = doc.querySelector(".topbar");
+          if (topbar) topbar.style.display = "none";
+          const app = doc.getElementById("app");
+          if (app) app.style.height = "100vh";
+        } catch {
+        }
+      }
+
+      function postHelpMode(targetFrame) {
+        try {
+          targetFrame?.contentWindow?.postMessage(
+            { type: "atlas-help-mode", enabled: helpEnabled },
+            window.location.origin
+          );
+        } catch {
+        }
+      }
+
+      function broadcastHelpMode() {
+        postHelpMode(singleFrame);
+        postHelpMode(modernFrame);
+        postHelpMode(legacyFrame);
+      }
+
+      function wireFrame(frame) {
+        frame.addEventListener("load", () => {
+          stripInnerHeader(frame);
+          postHelpMode(frame);
+        });
+      }
+
+      wireFrame(singleFrame);
+      wireFrame(modernFrame);
+      wireFrame(legacyFrame);
+
+      function setSingleSource(mode) {
+        singleFrame.src = mode === "legacy" ? LEGACY_SRC : MODERN_SRC;
+      }
+
+      function reloadVisibleFrames() {
+        if (currentMode === "split") {
+          modernFrame.src = MODERN_SRC;
+          legacyFrame.src = LEGACY_SRC;
+          return;
+        }
+        setSingleSource(currentMode);
+      }
+
+      async function evaluateDataCompleteness() {
+        const checks = await Promise.all(
+          [
+            "/modern/data/atlas-data.json",
+            "/modern/data/architecture-score.json",
+            "/modern/data/architecture-drift.json",
+            "/modern/data/architecture-time-machine.json",
+          ].map(async (url) => {
+            try {
+              const res = await fetch(url, { cache: "no-store" });
+              return res.ok;
+            } catch {
+              return false;
+            }
+          })
+        );
+        return checks.every(Boolean);
+      }
+
+      async function refreshHeaderMeta() {
+        let generatedAt = null;
+        let refreshing = false;
+        let lastRun = null;
+
+        try {
+          const dataRes = await fetch("/modern/data/atlas-data.json", { cache: "no-store" });
+          if (dataRes.ok) {
+            const payload = await dataRes.json();
+            generatedAt = payload?.generatedAt || null;
+          }
+        } catch {
+        }
+
+        try {
+          const statusRes = await fetch("/api/refresh-status", { cache: "no-store" });
+          if (statusRes.ok) {
+            const statusPayload = await statusRes.json();
+            refreshing = Boolean(statusPayload?.refreshing);
+            lastRun = statusPayload?.lastRun || null;
+          }
+        } catch {
+        }
+
+        const complete = await evaluateDataCompleteness();
+        setChip(metaData, complete ? "Données: complètes" : "Données: partielles", complete ? "ok" : "warn");
+
+        const updatedAt = lastRun?.finishedAt || generatedAt;
+        setChip(metaUpdated, "Mise à jour: " + formatDate(updatedAt), updatedAt ? "ok" : null);
+
+        if (refreshing) {
+          setChip(metaStatus, "Statut: en cours", "warn");
+        } else if (lastRun?.ok) {
+          setChip(metaStatus, "Statut: OK", "ok");
+        } else if (lastRun && !lastRun.ok) {
+          setChip(metaStatus, "Statut: erreur", "fail");
+        } else {
+          setChip(metaStatus, "Statut: prêt", null);
+        }
+      }
 
       function setActive(which) {
+        currentMode = which;
         modeModern.classList.toggle("active", which === "modern");
         modeLegacy.classList.toggle("active", which === "legacy");
         modeSplit.classList.toggle("active", which === "split");
         split.classList.toggle("active", which === "split");
         single.classList.toggle("hidden", which === "split");
-        if (which === "modern") singleFrame.src = "/modern/";
-        if (which === "legacy") singleFrame.src = "/legacy/";
+        if (which === "modern") setSingleSource("modern");
+        if (which === "legacy") setSingleSource("legacy");
       }
 
       modeModern.onclick = () => setActive("modern");
       modeLegacy.onclick = () => setActive("legacy");
       modeSplit.onclick = () => setActive("split");
+      helpToggle.onclick = () => {
+        helpEnabled = !helpEnabled;
+        helpToggle.textContent = "Aide: " + (helpEnabled ? "ON" : "OFF");
+        helpToggle.classList.toggle("active", helpEnabled);
+        broadcastHelpMode();
+      };
 
       refreshBtn.onclick = async () => {
         refreshBtn.disabled = true;
-        status.textContent = "status=refreshing";
+        setChip(metaStatus, "Statut: en cours", "warn");
         try {
           const res = await fetch("/api/refresh", { method: "POST" });
           const payload = await res.json();
           if (!res.ok || !payload.ok) throw new Error(payload.stderr || payload.message || ("HTTP " + res.status));
-          status.textContent = "status=ok";
-          singleFrame.contentWindow?.location.reload();
-          modernFrame.contentWindow?.location.reload();
-          legacyFrame.contentWindow?.location.reload();
+          reloadVisibleFrames();
+          await refreshHeaderMeta();
         } catch (error) {
-          status.textContent = "status=error";
+          setChip(metaStatus, "Statut: erreur", "fail");
           console.error(error);
           alert("Refresh échoué: " + String(error.message || error));
         } finally {
           refreshBtn.disabled = false;
         }
       };
+
+      refreshHeaderMeta();
     </script>
   </body>
 </html>`;
