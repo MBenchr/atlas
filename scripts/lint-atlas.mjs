@@ -27,6 +27,8 @@ const REQUIRED_PATHS = [
   'docs/rollout-flags.md',
   'docs/pilot-payments-widgets.md',
   'docs/top5-rollout.md',
+  'docs/final-governance-audit.md',
+  'docs/readiness-signoff.md',
   'tests/visual/README.md',
   'tests/visual/_view-signatures.mjs',
   'tests/visual/baselines/view-signatures.json',

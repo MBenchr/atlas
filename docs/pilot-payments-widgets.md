@@ -50,16 +50,16 @@ Pilot tuning (stored in `atlas-data.json > pilotRollout`):
 Source:
 - `atlas-data.json > pilotRollout.kpiMeasurements`
 
-| KPI | Before | After pilot | Delta |
-|---|---:|---:|---:|
-| time-to-first-priority | `86.4s` | `31.8s` | `-63.2%` |
-| time-to-rationale | `142.6s` | `56.4s` | `-60.4%` |
-| clicks-to-owner-action | `5.8` | `2.1` | `-63.8%` |
-| drilldown-rate | `18%` | `34%` | `+88.9%` |
+| KPI | Before | After pilot | After optimization (`MBE-1127`) | Delta vs before |
+|---|---:|---:|---:|---:|
+| time-to-first-priority | `86.4s` | `31.8s` | `29.4s` | `-66.0%` |
+| time-to-rationale | `142.6s` | `56.4s` | `52.1s` | `-63.5%` |
+| clicks-to-owner-action | `5.8` | `2.1` | `1.9` | `-67.2%` |
+| drilldown-rate | `18%` | `34%` | `36%` | `+100.0%` |
 
 Interpretation:
-- pilot meets the intended directional target (`30s/60s/2-clicks` zone, with strong drilldown increase)
-- operator navigation burden drops materially on high-risk flows
+- optimization closes the residual KPI gap and reaches strict `30s/60s/2-clicks` targets
+- operator navigation burden drops materially on high-risk flows while keeping drilldown growth
 
 ## Ranking impact
 

@@ -1,7 +1,7 @@
 # Atlas Execution Board (V3)
 
 This is the active execution path for `atlas`.
-Snapshot date: 2026-03-09 (updated after `MBE-1109`).
+Snapshot date: 2026-03-09 (updated after `MBE-1110` and epic closure).
 
 ## Board rules
 
@@ -17,10 +17,10 @@ Snapshot date: 2026-03-09 (updated after `MBE-1109`).
 - Total Atlas tickets in project: 21
 - `Needs triage`: 0
 - `Triage`: 0
-- `Todo`: 1 (`MBE-1110`)
-- `In Progress`: 1 (`MBE-1090` epic)
+- `Todo`: 0
+- `In Progress`: 0
 - `Backlog`: 0
-- `Done`: 19
+- `Done`: 21
 
 ## Wave 0 - Governance baseline (Now)
 
@@ -66,7 +66,14 @@ Dependencies:
 
 ## Wave 4 - Closure
 
-- `MBE-1110` - Final governance audit + readiness signoff
+- `MBE-1110` - Final governance audit + readiness signoff (`Done`)
+
+## Post-program routing snapshot (2026-03-09)
+
+- Open Atlas tickets in `queue:execution`: `0`
+- Atlas tickets in `queue:human-only`: `0`
+- Proposal execution record:
+  - `MBE-1127` - Post-signoff KPI optimization (`queue:codex-proposal`, project `Codex Proposals`, `Done`)
 
 ## Mandatory ticket contract
 

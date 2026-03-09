@@ -753,6 +753,12 @@ function alertStateBadgeClass(stateValue) {
   return "fail";
 }
 
+function applyAlertStateOverride(alertId, nextState) {
+  const resolvedAlertId = String(alertId || "").trim();
+  if (!resolvedAlertId) return;
+  state.alertStateOverrides[resolvedAlertId] = normalizeAlertState(nextState);
+}
+
 function resolveProofHref(path) {
   const value = String(path || "").trim();
   if (!value) return "";
@@ -2282,8 +2288,28 @@ function buildTopActionItems(data, limit = 5) {
   }));
 }
 
+function primeDecisionPriorityFromOverview(items) {
+  if (!Array.isArray(items) || !items.length) return;
+  const session = ensureDecisionKpiSession();
+  if (Number.isFinite(Number(session.firstPriorityAtMs))) return;
+  const now = Date.now();
+  session.firstPriorityAtMs = now;
+  session.events.push({
+    at: new Date(now).toISOString(),
+    kinds: ["priority"],
+    detail: {
+      source: "overview-auto-surface",
+      view: state.activeView,
+      domain: String(items[0]?.domain || ""),
+    },
+  });
+  if (session.events.length > 120) session.events = session.events.slice(-120);
+  persistDecisionKpiStore();
+}
+
 function renderTopActionsNow(data) {
   const items = buildTopActionItems(data, 5);
+  primeDecisionPriorityFromOverview(items);
   return `
     <section class="card" style="margin-top:12px">
       <div class="section-head">
@@ -2310,6 +2336,17 @@ function renderTopActionsNow(data) {
                       </div>
                       <div class="top-action-action">${safe(item.action)}</div>
                       <div class="top-action-links">
+                        <button
+                          type="button"
+                          class="inline-btn"
+                          data-top-action-owner="${encodeURIComponent(String(item.id))}"
+                          data-top-action-state="in-progress"
+                          data-kpi-event="priority,owner-action"
+                          data-kpi-source="top-action-owner"
+                          data-kpi-domain="${safe(item.domain)}"
+                        >
+                          Prendre action owner
+                        </button>
                         ${
                           proofHref
                             ? `<a class="mono" href="${safe(proofHref)}" target="_blank" rel="noreferrer noopener" data-kpi-event="priority,rationale,drilldown" data-kpi-domain="${safe(item.domain)}">Voir preuves</a>`
@@ -5042,7 +5079,7 @@ function bindAlertFilters() {
       const nextState = normalizeAlertState(button.getAttribute("data-alert-next-state"));
       if (!token) return;
       const alertId = decodeURIComponent(token);
-      state.alertStateOverrides[alertId] = nextState;
+      applyAlertStateOverride(alertId, nextState);
       render();
     });
   });
@@ -5059,6 +5096,19 @@ function bindAlertFilters() {
   document.querySelectorAll("[data-alert-proof-close]").forEach((button) => {
     button.addEventListener("click", () => {
       state.activeAlertProofId = null;
+      render();
+    });
+  });
+}
+
+function bindTopActionOwnerActions() {
+  document.querySelectorAll("[data-top-action-owner]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const token = button.getAttribute("data-top-action-owner") || "";
+      if (!token) return;
+      const alertId = decodeURIComponent(token);
+      const nextState = button.getAttribute("data-top-action-state") || "in-progress";
+      applyAlertStateOverride(alertId, nextState);
       render();
     });
   });
@@ -5594,6 +5644,7 @@ function render() {
   bindGlobalDetailInteractions();
   bindTrendInteractions();
   bindDecisionKpiEvents();
+  bindTopActionOwnerActions();
 }
 
 async function loadData() {
