@@ -1,0 +1,65 @@
+{
+  "overview": {
+    "length": 13171,
+    "cards": 20,
+    "tables": 2,
+    "badges": 31,
+    "buttons": 2,
+    "headings": [
+      "État global",
+      "Pression opérationnelle",
+      "Dette architecture",
+      "Risque fournisseur",
+      "Top 5 actions maintenant",
+      "KPI décision (30s/60s/2 clics)",
+      "Doctrine d'architecture",
+      "Scorecards domaines (priorité décisionnelle)",
+      "Alertes santé architecture",
+      "Alertes dérive architecture"
+    ]
+  },
+  "alerts": {
+    "length": 14937,
+    "cards": 1,
+    "tables": 0,
+    "badges": 9,
+    "buttons": 26,
+    "headings": []
+  },
+  "domains": {
+    "length": 13247,
+    "cards": 1,
+    "tables": 0,
+    "badges": 9,
+    "buttons": 12,
+    "headings": [
+      "Fiche Domaine maître"
+    ]
+  },
+  "portfolio": {
+    "length": 11546,
+    "cards": 5,
+    "tables": 2,
+    "badges": 10,
+    "buttons": 1,
+    "headings": [
+      "Portfolio manager/architecte",
+      "Heatmap domaine × signaux",
+      "Scatter importance stratégique × risque",
+      "Sparklines domaines",
+      "Domaines modèles (références de stabilité)"
+    ]
+  },
+  "evidence": {
+    "length": 15140,
+    "cards": 3,
+    "tables": 3,
+    "badges": 4,
+    "buttons": 10,
+    "headings": [
+      "Espace Preuves / Audit (P4)",
+      "Inventaire des artefacts d'audit",
+      "Snapshots bruts récents"
+    ]
+  }
+}

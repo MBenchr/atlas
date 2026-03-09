@@ -1,0 +1,156 @@
+{
+  "contractSet": "atlas-projection-contracts",
+  "version": "1.0.0",
+  "entries": [
+    {
+      "domain": "workitems",
+      "projection": "workitems_inbox",
+      "owner": "core-platform (NEXORA)",
+      "canonical": true,
+      "status": "canonical",
+      "consumers": ["scarabee", "moniteur", "dashboard"],
+      "contractVersion": "v1",
+      "compatibility": {
+        "backwardCompatible": true,
+        "forwardTolerant": true,
+        "breakingPolicy": "major-with-migration",
+        "migrationRequired": true
+      }
+    },
+    {
+      "domain": "documents",
+      "projection": "documents_publication",
+      "owner": "core-platform (NEXORA)",
+      "canonical": true,
+      "status": "canonical",
+      "consumers": ["moniteur", "dashboard"],
+      "contractVersion": "v1",
+      "compatibility": {
+        "backwardCompatible": true,
+        "forwardTolerant": true,
+        "breakingPolicy": "major-with-migration",
+        "migrationRequired": true
+      }
+    },
+    {
+      "domain": "forms",
+      "projection": "forms_submissions",
+      "owner": "core-platform (NEXORA)",
+      "canonical": true,
+      "status": "canonical",
+      "consumers": ["abetca", "moniteur"],
+      "contractVersion": "v1",
+      "compatibility": {
+        "backwardCompatible": true,
+        "forwardTolerant": true,
+        "breakingPolicy": "major-with-migration",
+        "migrationRequired": true
+      }
+    },
+    {
+      "domain": "pages",
+      "projection": "pages_runtime",
+      "owner": "core-platform (NEXORA)",
+      "canonical": true,
+      "status": "canonical",
+      "consumers": ["abetca", "dashboard", "widgets-cdn"],
+      "contractVersion": "v1",
+      "compatibility": {
+        "backwardCompatible": true,
+        "forwardTolerant": true,
+        "breakingPolicy": "major-with-migration",
+        "migrationRequired": true
+      }
+    },
+    {
+      "domain": "comms",
+      "projection": "comms_conversation_queue",
+      "owner": "core-platform (NEXORA)",
+      "canonical": true,
+      "status": "canonical",
+      "consumers": ["scarabee", "moniteur"],
+      "contractVersion": "v1",
+      "compatibility": {
+        "backwardCompatible": true,
+        "forwardTolerant": true,
+        "breakingPolicy": "major-with-migration",
+        "migrationRequired": true
+      }
+    },
+    {
+      "domain": "analytics",
+      "projection": "analytics_kpi",
+      "owner": "api data-plane",
+      "canonical": true,
+      "status": "canonical",
+      "consumers": ["dashboard", "moniteur", "abetca"],
+      "contractVersion": "v1",
+      "compatibility": {
+        "backwardCompatible": true,
+        "forwardTolerant": true,
+        "breakingPolicy": "major-with-migration",
+        "migrationRequired": true
+      }
+    },
+    {
+      "domain": "widgets",
+      "projection": "widgets_runtime_context",
+      "owner": "core-platform (NEXORA)",
+      "canonical": true,
+      "status": "canonical",
+      "consumers": ["widgets-cdn", "dashboard"],
+      "contractVersion": "v1",
+      "compatibility": {
+        "backwardCompatible": true,
+        "forwardTolerant": true,
+        "breakingPolicy": "major-with-migration",
+        "migrationRequired": true
+      }
+    },
+    {
+      "domain": "machine",
+      "projection": "machine_entity_view",
+      "owner": "core-platform (NEXORA)",
+      "canonical": true,
+      "status": "canonical",
+      "consumers": ["widgets-cdn", "dashboard", "directories"],
+      "contractVersion": "v1",
+      "compatibility": {
+        "backwardCompatible": true,
+        "forwardTolerant": true,
+        "breakingPolicy": "major-with-migration",
+        "migrationRequired": true
+      }
+    },
+    {
+      "domain": "devices",
+      "projection": "devices_registry_state",
+      "owner": "core-platform (NEXORA)",
+      "canonical": true,
+      "status": "canonical",
+      "consumers": ["dashboard", "moniteur"],
+      "contractVersion": "v1",
+      "compatibility": {
+        "backwardCompatible": true,
+        "forwardTolerant": true,
+        "breakingPolicy": "major-with-migration",
+        "migrationRequired": true
+      }
+    },
+    {
+      "domain": "payments",
+      "projection": "payments_checkout_status",
+      "owner": "core-platform (NEXORA)",
+      "canonical": true,
+      "status": "canonical",
+      "consumers": ["widgets-cdn", "dashboard", "moniteur"],
+      "contractVersion": "v1",
+      "compatibility": {
+        "backwardCompatible": true,
+        "forwardTolerant": true,
+        "breakingPolicy": "major-with-migration",
+        "migrationRequired": true
+      }
+    }
+  ]
+}

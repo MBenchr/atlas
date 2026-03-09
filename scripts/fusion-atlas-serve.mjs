@@ -69,17 +69,23 @@ function htmlShell() {
         background: linear-gradient(90deg, #10212a 0%, #123340 100%);
         padding: 10px 14px;
         display: flex;
-        flex-direction: column;
+        justify-content: space-between;
+        align-items: flex-start;
         gap: 8px;
       }
       .title h1 { margin: 0; font-size: 1rem; }
       .title p { margin: 3px 0 0; color: var(--muted); font-size: 0.8rem; }
+      .topbar-right {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 7px;
+      }
       .toolbar {
         display: flex;
-        justify-content: space-between;
+        justify-content: flex-end;
         align-items: center;
-        gap: 10px;
-        flex-wrap: wrap;
+        gap: 8px;
       }
       .actions { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
       .btn {
@@ -119,28 +125,27 @@ function htmlShell() {
       }
       .viewer-single iframe {
         width: 100%;
-        height: calc(100vh - 138px);
+        height: calc(100vh - 122px);
         border: 1px solid var(--line);
         border-radius: 10px;
         background: #0f2028;
       }
-      .viewer-split {
-        display: none;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-      }
-      .viewer-split iframe {
-        width: 100%;
-        height: calc(100vh - 138px);
-        border: 1px solid var(--line);
-        border-radius: 10px;
-        background: #0f2028;
-      }
-      .viewer-split.active { display: grid; }
-      .viewer-single.hidden { display: none; }
       @media (max-width: 980px) {
-        .viewer-split.active { grid-template-columns: 1fr; }
-        .viewer-single iframe, .viewer-split iframe { height: calc(100vh - 176px); }
+        .topbar {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .topbar-right {
+          align-items: stretch;
+        }
+        .toolbar {
+          justify-content: flex-start;
+          flex-wrap: wrap;
+        }
+        .meta-line {
+          justify-content: flex-start;
+        }
+        .viewer-single iframe { height: calc(100vh - 170px); }
       }
     </style>
   </head>
@@ -148,19 +153,20 @@ function htmlShell() {
     <header class="topbar">
       <div class="title">
         <h1>Atlas NEXORA V3 · Cockpit d'architecture</h1>
-        <p>Navigation unifiée: mode Modern, mode Legacy, comparaison, refresh global et aide globale.</p>
+        <p>Navigation unifiée: mode moderne, mode legacy, refresh global et aide globale.</p>
       </div>
-      <div class="toolbar">
-        <div class="actions">
-          <button id="mode-modern" class="btn active" type="button">Mode moderne</button>
-          <button id="mode-legacy" class="btn" type="button">Mode legacy</button>
-          <button id="mode-split" class="btn" type="button">Comparaison</button>
-          <button id="refresh" class="btn" type="button">Mettre à jour</button>
-          <button id="help-toggle" class="btn" type="button">Aide: OFF</button>
+      <div class="topbar-right">
+        <div class="toolbar">
+          <div class="actions">
+            <button id="mode-modern" class="btn active" type="button">Mode moderne</button>
+            <button id="mode-legacy" class="btn" type="button">Mode legacy</button>
+            <button id="refresh" class="btn" type="button">Mettre à jour</button>
+            <button id="help-toggle" class="btn" type="button">Aide: OFF</button>
+          </div>
         </div>
         <div class="meta-line">
           <span id="meta-updated" class="meta-chip">Mise à jour: -</span>
-          <span id="meta-data" class="meta-chip">Données: chargement...</span>
+          <span id="meta-data" class="meta-chip">Données: chargement…</span>
           <span id="meta-status" class="meta-chip">Statut: prêt</span>
         </div>
       </div>
@@ -170,10 +176,6 @@ function htmlShell() {
       <section id="single" class="viewer-single">
         <iframe id="single-frame" src="/modern/?embed=1&fusion=1" title="Atlas modern"></iframe>
       </section>
-      <section id="split" class="viewer-split">
-        <iframe id="modern-frame" src="/modern/?embed=1&fusion=1" title="Atlas modern split"></iframe>
-        <iframe id="legacy-frame" src="/legacy/?embed=1&fusion=1" title="Atlas legacy split"></iframe>
-      </section>
     </main>
 
     <script>
@@ -181,19 +183,13 @@ function htmlShell() {
       const LEGACY_SRC = "/legacy/?embed=1&fusion=1";
       const modeModern = document.getElementById("mode-modern");
       const modeLegacy = document.getElementById("mode-legacy");
-      const modeSplit = document.getElementById("mode-split");
-      const single = document.getElementById("single");
-      const split = document.getElementById("split");
       const singleFrame = document.getElementById("single-frame");
-      const modernFrame = document.getElementById("modern-frame");
-      const legacyFrame = document.getElementById("legacy-frame");
       const refreshBtn = document.getElementById("refresh");
       const helpToggle = document.getElementById("help-toggle");
       const metaUpdated = document.getElementById("meta-updated");
       const metaData = document.getElementById("meta-data");
       const metaStatus = document.getElementById("meta-status");
 
-      let currentMode = "modern";
       let helpEnabled = false;
 
       function setChip(element, text, level) {
@@ -235,8 +231,6 @@ function htmlShell() {
 
       function broadcastHelpMode() {
         postHelpMode(singleFrame);
-        postHelpMode(modernFrame);
-        postHelpMode(legacyFrame);
       }
 
       function wireFrame(frame) {
@@ -247,20 +241,13 @@ function htmlShell() {
       }
 
       wireFrame(singleFrame);
-      wireFrame(modernFrame);
-      wireFrame(legacyFrame);
 
       function setSingleSource(mode) {
         singleFrame.src = mode === "legacy" ? LEGACY_SRC : MODERN_SRC;
       }
 
       function reloadVisibleFrames() {
-        if (currentMode === "split") {
-          modernFrame.src = MODERN_SRC;
-          legacyFrame.src = LEGACY_SRC;
-          return;
-        }
-        setSingleSource(currentMode);
+        singleFrame.src = singleFrame.src.includes("/legacy/") ? LEGACY_SRC : MODERN_SRC;
       }
 
       async function evaluateDataCompleteness() {
@@ -307,7 +294,7 @@ function htmlShell() {
         }
 
         const complete = await evaluateDataCompleteness();
-        setChip(metaData, complete ? "Données: complètes" : "Données: partielles", complete ? "ok" : "warn");
+        setChip(metaData, complete ? "Données complètes" : "Données partielles", complete ? "ok" : "warn");
 
         const updatedAt = lastRun?.finishedAt || generatedAt;
         setChip(metaUpdated, "Mise à jour: " + formatDate(updatedAt), updatedAt ? "ok" : null);
@@ -324,19 +311,14 @@ function htmlShell() {
       }
 
       function setActive(which) {
-        currentMode = which;
         modeModern.classList.toggle("active", which === "modern");
         modeLegacy.classList.toggle("active", which === "legacy");
-        modeSplit.classList.toggle("active", which === "split");
-        split.classList.toggle("active", which === "split");
-        single.classList.toggle("hidden", which === "split");
         if (which === "modern") setSingleSource("modern");
         if (which === "legacy") setSingleSource("legacy");
       }
 
       modeModern.onclick = () => setActive("modern");
       modeLegacy.onclick = () => setActive("legacy");
-      modeSplit.onclick = () => setActive("split");
       helpToggle.onclick = () => {
         helpEnabled = !helpEnabled;
         helpToggle.textContent = "Aide: " + (helpEnabled ? "ON" : "OFF");

@@ -1,0 +1,22 @@
+{
+  "name": "atlas-quality-gates",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Atlas local quality gates (MBE-1094)",
+  "scripts": {
+    "generate:freshness": "node scripts/generate-freshness-contract.mjs",
+    "generate:priority": "node scripts/generate-decision-priority.mjs",
+    "generate:alerts": "node scripts/generate-alerts-taxonomy.mjs",
+    "generate:trends": "node scripts/generate-trends-correlation.mjs",
+    "generate:audit": "node scripts/generate-audit-index.mjs",
+    "lint": "node scripts/lint-atlas.mjs",
+    "typecheck": "node scripts/typecheck-atlas.mjs",
+    "test:unit": "node --test tests/unit/*.test.mjs",
+    "test:contracts": "node scripts/validate-atlas-contracts.mjs && node --test tests/contracts/*.test.mjs",
+    "test:smoke": "node scripts/smoke-atlas.mjs",
+    "test:e2e": "node --test tests/e2e/*.test.mjs",
+    "check": "npm run lint && npm run typecheck && npm run test:unit && npm run test:contracts && npm run test:smoke && npm run test:e2e",
+    "ci:quality": "npm run check",
+    "generate:visual-baseline": "node tests/visual/generate-view-signatures.mjs"
+  }
+}

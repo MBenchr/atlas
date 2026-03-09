@@ -24,3 +24,21 @@ Le bouton **Mettre à jour** appelle `/api/refresh`, lance `atlas:generate` dans
 ```bash
 /Users/mohyi/atlas/run-atlas-dual.sh
 ```
+
+## Validation des contrats de données (MBE-1092)
+
+Valider tous les datasets Atlas contre les schémas versionnés:
+
+```bash
+node /Users/mohyi/atlas/scripts/validate-atlas-contracts.mjs
+```
+
+Valider un dataset précis:
+
+```bash
+node /Users/mohyi/atlas/scripts/validate-atlas-contracts.mjs --dataset architecture-score
+```
+
+Références:
+- `/Users/mohyi/atlas/data/contracts/manifest.json`
+- `/Users/mohyi/atlas/docs/atlas-data-contracts.md`
