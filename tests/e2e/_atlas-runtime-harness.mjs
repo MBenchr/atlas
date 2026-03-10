@@ -20,6 +20,8 @@ function createClassListStub() {
 }
 
 function createElementStub(id = '') {
+  const attributes = new Map();
+  const listeners = new Map();
   return {
     id,
     innerHTML: '',
@@ -30,9 +32,20 @@ function createElementStub(id = '') {
     style: {},
     dataset: {},
     classList: createClassListStub(),
-    setAttribute() {},
-    addEventListener() {},
-    removeEventListener() {},
+    __attributes: attributes,
+    __listeners: listeners,
+    setAttribute(name, value) {
+      attributes.set(String(name), String(value));
+    },
+    getAttribute(name) {
+      return attributes.has(String(name)) ? attributes.get(String(name)) : null;
+    },
+    addEventListener(type, listener) {
+      listeners.set(String(type), listener);
+    },
+    removeEventListener(type) {
+      listeners.delete(String(type));
+    },
     querySelectorAll() {
       return [];
     },
@@ -68,10 +81,11 @@ export async function loadAtlasRuntime() {
   const source = await fs.readFile(filePath, 'utf8');
 
   const withoutBootstrap = source.replace(/\nbootstrap\(\);\s*$/m, '\n');
-  const expose = `\n\nglobalThis.__atlasTestExports = {\n  state,\n  createDecisionKpiSession,\n  renderOverview,\n  renderExecutiveBoard,\n  renderTopActionsNow,\n  renderDecisionKpiDashboard,\n  renderArchitectureAlerts,\n  renderDomainMaster,\n  renderPortfolioView,\n  renderEvidenceAudit,\n  renderMigrationBanner,\n  buildArchitectureAlerts,\n  buildPortfolioRows,\n  buildVisibleViews,\n  setInvestigationContext,\n  setEvidenceContext,\n  render\n};\n`;
+  const expose = `\n\nglobalThis.__atlasTestExports = {\n  state,\n  buildCanonicalDataStatus,\n  resolveFreshnessContract,\n  resolveAuditIndex,\n  resolveDecisionKpiContract,\n  updateFreshnessPill,\n  createDecisionKpiSession,\n  renderOverview,\n  renderExecutiveBoard,\n  renderTopActionsNow,\n  renderDecisionKpiDashboard,\n  renderArchitectureAlerts,\n  renderDomainMaster,\n  renderPortfolioView,\n  renderEvidenceAudit,\n  renderMigrationBanner,\n  renderProjectionRegistry,\n  buildArchitectureAlerts,\n  buildPortfolioRows,\n  buildVisibleViews,\n  buildAuditCheckRows,\n  setInvestigationContext,\n  setEvidenceContext,\n  bindGlobalDetailInteractions,\n  reloadDataIntoState,\n  render\n};\n`;
 
   const documentStub = createDocumentStub();
   const localStore = new Map();
+  let fetchImpl = async () => ({ ok: false, status: 404, json: async () => ({}) });
 
   const sandbox = {
     console,
@@ -93,7 +107,7 @@ export async function loadAtlasRuntime() {
     WeakSet,
     encodeURIComponent,
     decodeURIComponent,
-    fetch: async () => ({ ok: false, status: 404, json: async () => ({}) }),
+    fetch: (...args) => fetchImpl(...args),
     document: documentStub,
     window: {
       location: { search: '' },
@@ -122,6 +136,24 @@ export async function loadAtlasRuntime() {
   if (!runtime || !runtime.state) {
     throw new Error('Unable to load Atlas runtime exports for tests.');
   }
+  runtime.__setFetchImplementation = (impl) => {
+    fetchImpl = impl;
+  };
+  runtime.__document = documentStub;
+  runtime.__dispatch = (id, type, event = {}) => {
+    const node = documentStub.getElementById(id);
+    const listener = node?.__listeners?.get(String(type));
+    if (!listener) throw new Error(`No listener registered for ${id}:${type}`);
+    const payload = {
+      preventDefault() {},
+      stopPropagation() {},
+      target: node,
+      currentTarget: node,
+      ...event,
+    };
+    return listener(payload);
+  };
+  runtime.document = documentStub;
   return runtime;
 }
 
@@ -139,6 +171,7 @@ export function applyFixture(runtime, fixture) {
   state.decisionKpiContract = clone(fixture.serviceOpsReport.decisionKpis);
   state.decisionKpiSession = null;
   state.decisionKpiHistory = [];
+  state.detailListenerBound = false;
 
   state.activeView = 'overview';
   state.graphFilter = new Set(['repo', 'domain', 'projection', 'provider']);

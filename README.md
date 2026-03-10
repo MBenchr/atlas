@@ -1,15 +1,18 @@
 # NEXORA V3 Atlas Site
 
-## Lancement recommandé (fusion: un seul site)
+## Lancement recommandé (entrée Atlas unique)
 
 ```bash
 /Users/mohyi/atlas/run-atlas-fusion.sh
 ```
 
-Liens disponibles:
-- Shell fusion (mode Modern / Legacy / Comparaison): `http://127.0.0.1:4173`
-- Modern directement: `http://127.0.0.1:4173/modern/`
-- Legacy directement: `http://127.0.0.1:4173/legacy/`
+Lien opératoire:
+- Atlas intégré: `http://127.0.0.1:4173`
+
+Notes:
+- l’URL racine est l’unique point d’entrée recommandé
+- le shell expose seulement la vue cockpit et un contexte historique, sans vue parallèle dédiée
+- les chemins internes de compatibilité restent disponibles pour diagnostic, pas comme UX opératoire
 
 Ports custom:
 
@@ -17,7 +20,14 @@ Ports custom:
 ATLAS_HOST=127.0.0.1 ATLAS_PORT=4273 /Users/mohyi/atlas/run-atlas-fusion.sh
 ```
 
-Le bouton **Mettre à jour** appelle `/api/refresh`, lance `atlas:generate` dans `/Users/mohyi/mcp`, puis resynchronise les données dans `/Users/mohyi/atlas/data`.
+Le bouton **Mettre à jour** appelle `/api/refresh`, lance `atlas:generate` dans `/Users/mohyi/mcp`, resynchronise les données dans `/Users/mohyi/atlas/data`, puis alimente le shell intégré.
+
+Régénération terminal-first équivalente:
+
+```bash
+npm --prefix /Users/mohyi/mcp run atlas:generate
+cd /Users/mohyi/atlas && npm run sync:data
+```
 
 ## Mode dual (fallback)
 

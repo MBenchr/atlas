@@ -61,9 +61,11 @@ Required checks covered by tests:
   - `tests/e2e/alerts.spec.test.mjs`
   - `tests/e2e/domain.spec.test.mjs`
   - `tests/e2e/portfolio.spec.test.mjs`
+  - `tests/e2e/refresh-integrated-shell.spec.test.mjs`
 - visual regression signatures:
   - baseline `tests/visual/baselines/view-signatures.json`
   - checker `tests/e2e/visual-regression.spec.test.mjs`
+  - covered surfaces: integrated shell + overview + alerts + domains + portfolio + evidence + projections
 
 ## Perceived performance budget (render TTI)
 

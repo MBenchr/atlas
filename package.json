@@ -4,6 +4,7 @@
   "private": true,
   "description": "Atlas local quality gates (MBE-1094)",
   "scripts": {
+    "sync:data": "node scripts/sync-generated-data.mjs",
     "generate:freshness": "node scripts/generate-freshness-contract.mjs",
     "generate:priority": "node scripts/generate-decision-priority.mjs",
     "generate:alerts": "node scripts/generate-alerts-taxonomy.mjs",

@@ -1,4 +1,33 @@
 {
+  "shell": {
+    "length": 43347,
+    "cards": 38,
+    "tables": 5,
+    "badges": 57,
+    "buttons": 16,
+    "headings": [
+      "Vues Atlas",
+      "Ce que montre cette vue",
+      "Transition Atlas vers l'entrée unifiée",
+      "État global",
+      "Pression opérationnelle",
+      "Dette architecture",
+      "Risque fournisseur",
+      "Top 5 actions maintenant",
+      "KPI décision (30s/60s/2 clics)",
+      "Portefeuille risque × importance",
+      "Ce qui a changé",
+      "Plan immédiat (7 jours)",
+      "Plan structurant (30 jours)",
+      "Doctrine d'architecture",
+      "Scorecards domaines (priorité décisionnelle)",
+      "Alertes santé architecture",
+      "Alertes dérive architecture",
+      "Focus prioritaire",
+      "Inspiration à répliquer",
+      "Scores de santé par domaine"
+    ]
+  },
   "overview": {
     "length": 14220,
     "cards": 20,
@@ -19,7 +48,7 @@
     ]
   },
   "alerts": {
-    "length": 14937,
+    "length": 14944,
     "cards": 1,
     "tables": 0,
     "badges": 9,
@@ -51,7 +80,7 @@
     ]
   },
   "evidence": {
-    "length": 15140,
+    "length": 15147,
     "cards": 3,
     "tables": 3,
     "badges": 4,
@@ -61,5 +90,13 @@
       "Inventaire des artefacts d'audit",
       "Snapshots bruts récents"
     ]
+  },
+  "projections": {
+    "length": 1774,
+    "cards": 1,
+    "tables": 1,
+    "badges": 6,
+    "buttons": 0,
+    "headings": []
   }
 }

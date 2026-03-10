@@ -62,6 +62,7 @@ const state = {
   timeMachine: null,
   history: null,
   freshnessContract: null,
+  canonicalDataStatus: null,
   previousSnapshot: null,
   auditIndex: null,
   serviceOpsReport: null,
@@ -99,30 +100,6 @@ const state = {
 };
 
 const DECISION_KPI_STORAGE_KEY = "atlas.decision-kpi.v1";
-
-const DEFAULT_DECISION_KPI_CONTRACT = {
-  version: "v1",
-  targets: {
-    timeToFirstPrioritySec: 30,
-    timeToRationaleSec: 60,
-    clicksToOwnerAction: 2,
-    drilldownRateMin: 0.25,
-  },
-  baselineBeforeRefactor: {
-    sampleSize: 18,
-    timeToFirstPrioritySec: 86.4,
-    timeToRationaleSec: 142.6,
-    clicksToOwnerAction: 5.8,
-    drilldownRate: 0.18,
-  },
-  postRefactorBaseline: {
-    sampleSize: 20,
-    timeToFirstPrioritySec: 34.1,
-    timeToRationaleSec: 63.8,
-    clicksToOwnerAction: 2.4,
-    drilldownRate: 0.29,
-  },
-};
 
 const runtime = (() => {
   const params = new URLSearchParams(window.location.search);
@@ -412,48 +389,30 @@ function asFiniteNumber(value, fallback = null) {
 
 function resolveDecisionKpiContract() {
   const payload = state.decisionKpiContract;
-  const defaults = DEFAULT_DECISION_KPI_CONTRACT;
+  if (!payload) return null;
   return {
-    version: String(payload?.version || defaults.version),
+    version: String(payload?.version || "unknown"),
     generatedAt: payload?.generatedAt || state.serviceOpsReport?.generatedAt || null,
     source: payload?.source || "data/architecture-service-ops-live-report.json",
     targets: {
-      timeToFirstPrioritySec: asFiniteNumber(payload?.targets?.timeToFirstPrioritySec, defaults.targets.timeToFirstPrioritySec),
-      timeToRationaleSec: asFiniteNumber(payload?.targets?.timeToRationaleSec, defaults.targets.timeToRationaleSec),
-      clicksToOwnerAction: asFiniteNumber(payload?.targets?.clicksToOwnerAction, defaults.targets.clicksToOwnerAction),
-      drilldownRateMin: asFiniteNumber(payload?.targets?.drilldownRateMin, defaults.targets.drilldownRateMin),
+      timeToFirstPrioritySec: asFiniteNumber(payload?.targets?.timeToFirstPrioritySec),
+      timeToRationaleSec: asFiniteNumber(payload?.targets?.timeToRationaleSec),
+      clicksToOwnerAction: asFiniteNumber(payload?.targets?.clicksToOwnerAction),
+      drilldownRateMin: asFiniteNumber(payload?.targets?.drilldownRateMin),
     },
     baselineBeforeRefactor: {
-      sampleSize: asFiniteNumber(payload?.baselineBeforeRefactor?.sampleSize, defaults.baselineBeforeRefactor.sampleSize),
-      timeToFirstPrioritySec: asFiniteNumber(
-        payload?.baselineBeforeRefactor?.timeToFirstPrioritySec,
-        defaults.baselineBeforeRefactor.timeToFirstPrioritySec
-      ),
-      timeToRationaleSec: asFiniteNumber(
-        payload?.baselineBeforeRefactor?.timeToRationaleSec,
-        defaults.baselineBeforeRefactor.timeToRationaleSec
-      ),
-      clicksToOwnerAction: asFiniteNumber(
-        payload?.baselineBeforeRefactor?.clicksToOwnerAction,
-        defaults.baselineBeforeRefactor.clicksToOwnerAction
-      ),
-      drilldownRate: asFiniteNumber(payload?.baselineBeforeRefactor?.drilldownRate, defaults.baselineBeforeRefactor.drilldownRate),
+      sampleSize: asFiniteNumber(payload?.baselineBeforeRefactor?.sampleSize),
+      timeToFirstPrioritySec: asFiniteNumber(payload?.baselineBeforeRefactor?.timeToFirstPrioritySec),
+      timeToRationaleSec: asFiniteNumber(payload?.baselineBeforeRefactor?.timeToRationaleSec),
+      clicksToOwnerAction: asFiniteNumber(payload?.baselineBeforeRefactor?.clicksToOwnerAction),
+      drilldownRate: asFiniteNumber(payload?.baselineBeforeRefactor?.drilldownRate),
     },
     postRefactorBaseline: {
-      sampleSize: asFiniteNumber(payload?.postRefactorBaseline?.sampleSize, defaults.postRefactorBaseline.sampleSize),
-      timeToFirstPrioritySec: asFiniteNumber(
-        payload?.postRefactorBaseline?.timeToFirstPrioritySec,
-        defaults.postRefactorBaseline.timeToFirstPrioritySec
-      ),
-      timeToRationaleSec: asFiniteNumber(
-        payload?.postRefactorBaseline?.timeToRationaleSec,
-        defaults.postRefactorBaseline.timeToRationaleSec
-      ),
-      clicksToOwnerAction: asFiniteNumber(
-        payload?.postRefactorBaseline?.clicksToOwnerAction,
-        defaults.postRefactorBaseline.clicksToOwnerAction
-      ),
-      drilldownRate: asFiniteNumber(payload?.postRefactorBaseline?.drilldownRate, defaults.postRefactorBaseline.drilldownRate),
+      sampleSize: asFiniteNumber(payload?.postRefactorBaseline?.sampleSize),
+      timeToFirstPrioritySec: asFiniteNumber(payload?.postRefactorBaseline?.timeToFirstPrioritySec),
+      timeToRationaleSec: asFiniteNumber(payload?.postRefactorBaseline?.timeToRationaleSec),
+      clicksToOwnerAction: asFiniteNumber(payload?.postRefactorBaseline?.clicksToOwnerAction),
+      drilldownRate: asFiniteNumber(payload?.postRefactorBaseline?.drilldownRate),
     },
   };
 }
@@ -769,57 +728,31 @@ function resolveProofHref(path) {
   return "";
 }
 
-function buildFallbackFreshnessContract(data = state.data, history = state.history) {
-  const datasets = [];
-  if (data?.generatedAt) {
-    const ageHours = parseAgeHoursFromIso(data.generatedAt);
-    const status = freshnessStatusFromAge(ageHours);
-    datasets.push({
-      dataset: "atlas-data",
-      file: "data/atlas-data.json",
-      generatedAt: data.generatedAt,
-      ageHours: Number(ageHours ?? 0),
-      status,
-    });
-  }
+function buildCanonicalDataStatus() {
+  const freshnessAvailable = Array.isArray(state.data?.freshnessContract?.datasets) && state.data.freshnessContract.datasets.length > 0;
+  const auditAvailable = Array.isArray(state.auditIndex?.artifacts) && state.auditIndex.artifacts.length > 0;
+  const serviceOpsAvailable = Boolean(state.serviceOpsReport);
+  const decisionKpiAvailable = Boolean(state.decisionKpiContract);
+  const missing = [];
 
-  const snapshots = Array.isArray(history?.snapshots) ? history.snapshots : [];
-  const latest = snapshots[snapshots.length - 1];
-  if (latest?.generatedAt) {
-    const ageHours = parseAgeHoursFromIso(latest.generatedAt);
-    const status = freshnessStatusFromAge(ageHours);
-    datasets.push({
-      dataset: "atlas-history",
-      file: "data/atlas-history.json",
-      generatedAt: latest.generatedAt,
-      ageHours: Number(ageHours ?? 0),
-      status,
-    });
-  }
-
-  const rank = { normal: 0, degraded: 1, stale: 2 };
-  const globalStatus = datasets.reduce((best, row) => (rank[row.status] > rank[best] ? row.status : best), "normal");
-  const staleRows = datasets.filter((row) => row.status === "stale");
+  if (!freshnessAvailable) missing.push("freshnessContract");
+  if (!auditAvailable) missing.push("auditIndex");
+  if (!serviceOpsAvailable) missing.push("serviceOpsReport");
+  if (!decisionKpiAvailable) missing.push("decisionKpis");
 
   return {
-    generatedAt: new Date().toISOString(),
-    slaHours: { normal: 24, degraded: 48 },
-    globalStatus,
-    staleDatasetCount: staleRows.length,
-    datasets,
-    alerts: staleRows.map((row) => ({
-      id: `freshness:${row.dataset}`,
-      type: "freshness",
-      dataset: row.dataset,
-      domain: "platform",
-      severity: "critical",
-      status: row.status,
-      ageHours: row.ageHours,
-      generatedAt: row.generatedAt,
-      explanation: `Dataset ${row.dataset} stale (${row.ageHours}h).`,
-      action: `Relancer le refresh Atlas pour ${row.dataset} puis revalider les quality gates.`,
-    })),
+    freshnessAvailable,
+    auditAvailable,
+    serviceOpsAvailable,
+    decisionKpiAvailable,
+    missing,
+    canonicalComplete: missing.length === 0,
   };
+}
+
+function canonicalMissingLabel(status = state.canonicalDataStatus) {
+  const missing = Array.isArray(status?.missing) ? status.missing : [];
+  return missing.length ? missing.join(", ") : "aucun";
 }
 
 function resolveFreshnessContract(data = state.data, history = state.history) {
@@ -837,18 +770,52 @@ function resolveFreshnessContract(data = state.data, history = state.history) {
       alerts: Array.isArray(fromData.alerts) ? fromData.alerts : [],
     };
   }
-  return buildFallbackFreshnessContract(data, history);
+  return null;
 }
 
 function updateFreshnessPill(contract) {
   const node = document.getElementById("freshness-status");
   if (!node) return;
-  const resolved = contract || buildFallbackFreshnessContract();
+  const resolved = contract || null;
+  node.classList.remove("pass", "warn", "fail");
+  if (!resolved) {
+    node.classList.add("fail");
+    node.textContent = "Fraicheur: indisponible (non canonique)";
+    return;
+  }
   const status = String(resolved?.globalStatus || "stale");
   const staleCount = Number(resolved?.staleDatasetCount || 0);
-  node.classList.remove("pass", "warn", "fail");
   node.classList.add(freshnessBadgeClass(status));
   node.textContent = `Fraicheur: ${freshnessLabel(status)}${staleCount > 0 ? ` (${staleCount} stale)` : ""}`;
+}
+
+function buildNonCanonicalAlertQueue(data) {
+  const missing = [];
+  if (!Array.isArray(data?.alertsTaxonomy?.alerts) || data.alertsTaxonomy.alerts.length === 0) {
+    missing.push("alertsTaxonomy");
+  }
+  if (!data?.decisionPriority?.alerts || !data?.decisionPriority?.domains) {
+    missing.push("decisionPriority");
+  }
+  const missingLabel = missing.length ? missing.join(", ") : "alertsTaxonomy";
+  return [
+    {
+      id: "noncanonical:alerts-taxonomy-missing",
+      type: "non-canonical-alert-queue",
+      domain: "platform",
+      owner: "atlas-ops",
+      severity: "critical",
+      explanation: `Projection canonique manquante: ${missingLabel}. Atlas n'expose pas de queue opératoire reconstruite localement.`,
+      action: "Relancer atlas:generate puis npm run sync:data avant d'utiliser la queue d'alertes.",
+      projectedImpact: "Queue d'alertes non canonique",
+      proofLink: "/Users/mohyi/atlas/data/atlas-data.json",
+      state: "open",
+      priorityScore: 100,
+      sourceFile: "data/atlas-data.json",
+      sourcePath: missingLabel,
+      nonCanonical: true,
+    },
+  ];
 }
 
 function normalizeTrendWindow() {
@@ -1004,40 +971,10 @@ function formatBytes(value) {
   return `${bytes} B`;
 }
 
-function buildFallbackAuditIndex(data = state.data, history = state.history) {
-  const nowIso = new Date().toISOString();
-  const latestSnapshot = Array.isArray(history?.snapshots) ? history.snapshots[history.snapshots.length - 1] : null;
-  const artifacts = [
-    { id: "dataset:atlas-data", type: "dataset", source: "generated", label: "Dataset Atlas principal", path: "data/atlas-data.json", generatedAt: data?.generatedAt || nowIso, sizeBytes: null, domain: "platform" },
-    { id: "dataset:atlas-history", type: "dataset", source: "generated", label: "Historique Atlas", path: "data/atlas-history.json", generatedAt: latestSnapshot?.generatedAt || nowIso, sizeBytes: null, domain: "platform" },
-    { id: "dataset:architecture-drift", type: "dataset", source: "generated", label: "Rapport de dérive", path: "data/architecture-drift.json", generatedAt: data?.generatedAt || nowIso, sizeBytes: null, domain: "platform" },
-    { id: "dataset:architecture-score", type: "dataset", source: "generated", label: "Score architecture", path: "data/architecture-score.json", generatedAt: data?.generatedAt || nowIso, sizeBytes: null, domain: "platform" },
-    { id: "dataset:trends-correlation", type: "dataset", source: "history", label: "Projection trends correlation", path: "data/history/atlas-trends-correlation.json", generatedAt: history?.trendsCorrelation?.generatedAt || nowIso, sizeBytes: null, domain: "platform" },
-  ];
-
-  const snapshotRows = Array.isArray(history?.snapshots)
-    ? history.snapshots.map((row, index, array) => ({
-        id: `snapshot:${row.file}`,
-        type: "snapshot",
-        source: "history",
-        label: `Snapshot brut ${array.length - index}/${array.length}`,
-        path: `data/${row.file}`,
-        generatedAt: row.generatedAt || nowIso,
-        sizeBytes: null,
-        domain: "platform",
-      }))
-    : [];
-
-  return {
-    generatedAt: nowIso,
-    artifacts: [...artifacts, ...snapshotRows],
-  };
-}
-
 function resolveAuditIndex(data = state.data, history = state.history) {
   const payload = state.auditIndex;
   if (payload && Array.isArray(payload.artifacts)) return payload;
-  return buildFallbackAuditIndex(data, history);
+  return null;
 }
 
 function severityRankValue(level) {
@@ -2011,6 +1948,7 @@ function renderMigrationBanner() {
   if (runtime.embedded) return "";
   const flags = getRolloutFlags();
   const mode = flags.cockpitV3Enabled ? "v3-active" : "legacy-bridge";
+  const modeLabel = mode === "v3-active" ? "entree-unifiee" : "fallback-sur";
   const visibleViews = buildVisibleViews(flags);
   const disabled = [];
   if (!flags.cockpitV3Enabled) disabled.push("cockpit_v3");
@@ -2022,8 +1960,8 @@ function renderMigrationBanner() {
   return `
     <section class="card migration-banner">
       <div class="section-head">
-        <h3>Migration IA Atlas (legacy -> V3)</h3>
-        <span class="badge ${mode === "v3-active" ? "pass" : "warn"}">${mode}</span>
+        <h3>Transition Atlas vers l'entrée unifiée</h3>
+        <span class="badge ${mode === "v3-active" ? "pass" : "warn"}">${modeLabel}</span>
       </div>
       <div class="mono">
         vues=${visibleViews.map((view) => view.id).join(", ")} · flags: cockpit_v3=${flags.cockpitV3Enabled} · evidence=${flags.evidenceSpaceEnabled} · investigation=${flags.secondaryInvestigationEnabled} · decision_kpi=${flags.decisionKpiEnabled}
@@ -2032,7 +1970,7 @@ function renderMigrationBanner() {
       <table style="margin-top:8px">
         <thead>
           <tr>
-            <th>Legacy tab</th>
+            <th>Vue historique</th>
             <th>Layer V3</th>
             <th>Raison</th>
           </tr>
@@ -2128,6 +2066,18 @@ function renderExecutiveTrendPreview() {
 
 function renderDecisionKpiDashboard() {
   const contract = resolveDecisionKpiContract();
+  if (!contract) {
+    return `
+      <section class="card decision-kpi-card" style="margin-top:12px">
+        <div class="section-head">
+          <h3>KPI décision (30s/60s/2 clics)</h3>
+          <span class="badge fail">non canonique</span>
+        </div>
+        <p class="matrix-subtitle">Projection indisponible: aucun KPI décision canonique n'a été chargé depuis le report service-ops.</p>
+        <div class="mono">datasets manquants=${safe(canonicalMissingLabel())}</div>
+      </section>
+    `;
+  }
   const telemetry = computeDecisionKpiAggregate(contract);
   const session = telemetry.currentSummary;
 
@@ -3780,6 +3730,7 @@ function buildAuditCheckRows(data, artifacts) {
   const completeAlerts = alerts.filter(
     (row) => String(row.owner || "").trim() && String(row.action || "").trim() && String(row.proofLink || "").trim()
   ).length;
+  const auditIndex = resolveAuditIndex(data, state.history);
   const snapshotCount = Number(state.history?.snapshots?.length || 0);
   const snapshotArtifacts = artifacts.filter((row) => row.type === "snapshot").length;
   const snapshotCoverage = snapshotCount > 0 ? Math.round((snapshotArtifacts / snapshotCount) * 100) : 0;
@@ -3791,10 +3742,10 @@ function buildAuditCheckRows(data, artifacts) {
     {
       id: "check:freshness",
       label: "Fraîcheur datasets",
-      value: `${freshnessLabel(String(freshness?.globalStatus || "stale"))} (${staleCount} stale)`,
-      status: staleCount > 0 ? "fail" : String(freshness?.globalStatus || "stale") === "degraded" ? "warn" : "pass",
-      detail: `datasets=${Number(freshness?.datasets?.length || 0)}`,
-      proofPath: "data/atlas-data.json",
+      value: freshness ? `${freshnessLabel(String(freshness?.globalStatus || "stale"))} (${staleCount} stale)` : "indisponible",
+      status: freshness ? (staleCount > 0 ? "fail" : String(freshness?.globalStatus || "stale") === "degraded" ? "warn" : "pass") : "fail",
+      detail: freshness ? `datasets=${Number(freshness?.datasets?.length || 0)}` : "contrat canonique manquant",
+      proofPath: freshness ? "data/atlas-data.json" : "",
     },
     {
       id: "check:alerts-taxonomy",
@@ -3807,10 +3758,10 @@ function buildAuditCheckRows(data, artifacts) {
     {
       id: "check:snapshots",
       label: "Couverture snapshots bruts",
-      value: `${snapshotArtifacts}/${snapshotCount}`,
-      status: snapshotCoverage >= 100 ? "pass" : snapshotCoverage >= 70 ? "warn" : "fail",
-      detail: `coverage=${snapshotCoverage}%`,
-      proofPath: "data/atlas-history.json",
+      value: auditIndex ? `${snapshotArtifacts}/${snapshotCount}` : "indisponible",
+      status: auditIndex ? (snapshotCoverage >= 100 ? "pass" : snapshotCoverage >= 70 ? "warn" : "fail") : "fail",
+      detail: auditIndex ? `coverage=${snapshotCoverage}%` : "index d'audit canonique manquant",
+      proofPath: auditIndex ? "data/atlas-history.json" : "",
     },
     {
       id: "check:projections",
@@ -3902,6 +3853,7 @@ function renderEvidenceAudit(data) {
   const context = state.evidenceContext;
   const artifacts = buildEvidenceArtifacts(data);
   const checks = buildAuditCheckRows(data, artifacts);
+  const auditIndexAvailable = Boolean(resolveAuditIndex(data, state.history));
   const searchValue = String(state.evidenceSearch || "").trim().toLowerCase();
   const filteredArtifacts = artifacts.filter((row) => matchesEvidenceFilters(row, searchValue));
   const typeOptions = ["all", ...new Set(artifacts.map((row) => String(row.type || "unknown"))).values()];
@@ -3917,6 +3869,16 @@ function renderEvidenceAudit(data) {
         <span class="mono">artefacts=${artifacts.length} · filtres=${filteredArtifacts.length}</span>
       </div>
       <p class="matrix-subtitle">Preuve brute isolée du cockpit: checks détaillés, snapshots, inventaire exhaustif, exports JSON.</p>
+      ${
+        auditIndexAvailable
+          ? ""
+          : `
+            <div class="graph-context-banner">
+              <strong>${iconSvg("risk", "inline-icon")} Index d'audit canonique indisponible</strong>
+              <span class="mono">Les checks et l'inventaire ci-dessous sont dégradés tant que le dataset data/history/atlas-audit-index.json n'est pas chargé.</span>
+            </div>
+          `
+      }
       ${
         context
           ? `
@@ -4399,133 +4361,12 @@ function buildArchitectureAlerts(data) {
     });
     return normalized.slice(0, 120);
   }
-
-  const alerts = [];
-  const freshness = resolveFreshnessContract(data, state.history);
-  const priorityByAlertId = new Map(
-    (data?.decisionPriority?.alerts || []).map((entry) => [String(entry.id), Number(entry.score || 0)])
-  );
-  const priorityByDomain = new Map(
-    (data?.decisionPriority?.domains || []).map((entry) => [String(entry.domain).toLowerCase(), Number(entry.score || 0)])
-  );
-
-  for (const [domain, row] of Object.entries(state.driftReport?.domains || {})) {
-    const findings = Number(row.totalFindings || 0);
-    if (findings <= 0) continue;
-    const severity = row.riskLevel === "critical" ? "critical" : row.riskLevel === "high" ? "high" : "medium";
-    alerts.push({
-      id: `drift:${domain}`,
-      type: "domain-drift",
-      domain,
-      owner: resolveOwner(domain),
-      severity,
-      explanation: `Dérive détectée (${findings} constats): bypass projection=${row.projectionBypassCount}, events non enregistrés=${row.unregisteredEvents}, cross-domain=${row.crossDomainImports}.`,
-      action: "Créer/traiter un ticket d’isolation + projection canonique + contract tests.",
-      projectedImpact: `Derive active (${findings} constats)`,
-      proofLink: "/Users/mohyi/atlas/data/architecture-drift.json",
-    });
-  }
-
-  for (const gap of data.gaps || []) {
-    alerts.push({
-      id: `gap:${gap.domain}:${gap.type}`,
-      type: "high-gap-unresolved",
-      domain: gap.domain,
-      owner: resolveOwner(gap.domain),
-      severity: gap.severity || "medium",
-      explanation: gap.message,
-      action: "Corriger la structure domaine/write-path/read-path avant nouvelles features.",
-      projectedImpact: `Gap ${gap.type} non traite`,
-      proofLink: "/Users/mohyi/atlas/data/atlas-data.json",
-    });
-  }
-
-  for (const repo of data.repos || []) {
-    for (const risk of repo.risks || []) {
-      alerts.push({
-        id: `risk:${repo.name.toLowerCase()}:${risk.type || "generic"}`,
-        type: "legacy-risk",
-        domain: repo.name.toLowerCase(),
-        owner: resolveOwner(repo.name.toLowerCase()),
-        severity: risk.severity || "medium",
-        explanation: risk.message,
-        action: "Réduire la complexité locale ou déplacer la logique métier hors routes/UI.",
-        projectedImpact: "Risque operatoire local",
-        proofLink: "/Users/mohyi/atlas/data/atlas-data.json",
-      });
-    }
-    for (const hotspot of (repo.hotspots || []).slice(0, 8)) {
-      if (hotspot.loc < 2000) continue;
-      alerts.push({
-        id: `hotspot:${repo.name.toLowerCase()}:${hotspot.file}`,
-        type: "legacy-hotspot",
-        domain: repo.name.toLowerCase(),
-        owner: resolveOwner(repo.name.toLowerCase()),
-        severity: hotspot.loc >= 2800 ? "critical" : "high",
-        explanation: `Hotspot volumineux: ${hotspot.file} (${hotspot.loc} LOC).`,
-        action: "Découper en services d’application + ports/adapters + tests ciblés.",
-        projectedImpact: `Hotspot ${hotspot.loc} LOC`,
-        proofLink: "/Users/mohyi/atlas/data/atlas-data.json",
-      });
-    }
-  }
-
-  for (const svc of data.externalServices || []) {
-    if (!svc.humanOnlyRisk) continue;
-    alerts.push({
-      id: `external:${svc.service}:${(svc.domains || [])[0] || "external"}`,
-      type: "external-risk",
-      domain: (svc.domains || [])[0] || "external",
-      owner: resolveOwner((svc.domains || [])[0] || "external"),
-      severity: "medium",
-      explanation: `Risque fournisseur externe (${svc.service}) sur ${(svc.domains || []).join(", ") || "n/d"}.`,
-      action: "Vérifier webhook/auth/secret ownership et runbook Human-Only.",
-      projectedImpact: "Risque fournisseur",
-      proofLink: "/Users/mohyi/atlas/data/atlas-data.json",
-    });
-  }
-
-  for (const row of freshness?.alerts || []) {
-    alerts.push({
-      id: row.id,
-      type: "snapshot-stale",
-      domain: row.domain || "platform",
-      owner: resolveOwner(row.domain || "platform"),
-      severity: row.severity || "critical",
-      explanation: `Fraicheur stale: ${row.dataset} (${row.ageHours}h, genere ${formatMediumDate(row.generatedAt)}).`,
-      action: row.action || "Relancer le refresh Atlas puis rerun quality gates.",
-      freshnessCritical: true,
-      projectedImpact: `Snapshot stale (${row.ageHours}h)`,
-      proofLink: "/Users/mohyi/atlas/data/atlas-data.json",
-    });
-  }
-
-  const rank = { critical: 3, high: 2, medium: 1, low: 0 };
-  for (const alert of alerts) {
-    const mappedScore = priorityByAlertId.get(String(alert.id));
-    const domainScore = priorityByDomain.get(String(alert.domain || "").toLowerCase()) || 0;
-    const severityBonus = severityRankValue(alert.severity) * 8;
-    const freshnessBoost = alert.freshnessCritical ? 40 : 0;
-    alert.priorityScore = Number(((mappedScore ?? domainScore) + severityBonus + freshnessBoost).toFixed(1));
-    alert.type = String(alert.type || "legacy");
-    alert.owner = String(alert.owner || resolveOwner(alert.domain));
-    alert.projectedImpact = String(alert.projectedImpact || "n/d");
-    alert.proofLink = String(alert.proofLink || "/Users/mohyi/atlas/data/atlas-data.json");
-    const overrideState = state.alertStateOverrides[String(alert.id)];
-    alert.state = normalizeAlertState(overrideState || alert.state || "open");
-    alert.action = String(alert.action || "Traiter l'alerte selon le playbook Atlas.");
-  }
-
-  alerts.sort((a, b) => {
-    const delta = Number(b.priorityScore || 0) - Number(a.priorityScore || 0);
-    if (delta !== 0) return delta;
-    return (rank[b.severity] || 0) - (rank[a.severity] || 0);
-  });
-  return alerts.slice(0, 80);
+  return buildNonCanonicalAlertQueue(data);
 }
 
 function renderArchitectureAlerts(data) {
   const alerts = buildArchitectureAlerts(data);
+  const nonCanonicalQueue = alerts.some((row) => row.nonCanonical);
   const counts = countAlertsBySeverity(alerts);
   const activeSeverityFilter = state.alertSeverityFilter || "all";
   const activeDomainFilter = state.alertDomainFilter || "all";
@@ -4570,6 +4411,11 @@ function renderArchitectureAlerts(data) {
   return `
     <section class="card">
       <h3>Queue opérationnelle d'alertes ${tip("Alerte = unité d'action: priorité, owner explicite, action suivante, preuve traçable.")}</h3>
+      ${
+        nonCanonicalQueue
+          ? `<div class="detail-item"><span class="badge fail">non canonique</span><span class="mono">Projection canonique alertsTaxonomy indisponible. La queue opératoire locale n'est pas reconstruite.</span></div>`
+          : ""
+      }
       <div class="alert-toolbar">
         <div class="alert-filter-group">
           ${filterOptions
@@ -5739,6 +5585,7 @@ async function reloadDataIntoState() {
     state.serviceOpsReport = null;
     state.decisionKpiContract = null;
   }
+  state.canonicalDataStatus = buildCanonicalDataStatus();
   state.freshnessContract = resolveFreshnessContract(state.data, state.history);
   document.getElementById("generated-at").textContent = `Généré: ${new Date(data.generatedAt).toLocaleString()}`;
   updateFreshnessPill(state.freshnessContract);
@@ -5752,9 +5599,15 @@ async function bootstrap() {
   try {
     await reloadDataIntoState();
     initializeDecisionKpiTelemetry();
+    health.classList.remove("pass", "warn", "fail");
     if (state.architectureScore?.domains && state.driftReport?.domains && state.timeMachine?.snapshots) {
-      health.textContent = "Statut: complet";
-      health.classList.add("pass");
+      if (state.canonicalDataStatus?.canonicalComplete) {
+        health.textContent = "Statut: complet";
+        health.classList.add("pass");
+      } else {
+        health.textContent = `Statut: degrade (${state.canonicalDataStatus.missing.length} dataset(s) canoniques manquants)`;
+        health.classList.add("fail");
+      }
     } else {
       health.textContent = "Statut: partiel";
       health.classList.add("warn");

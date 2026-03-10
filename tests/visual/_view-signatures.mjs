@@ -10,6 +10,7 @@ export const BASELINE_FILE = path.join(ROOT, 'tests/visual/baselines/view-signat
 function buildViewHtml(runtime) {
   const { state } = runtime;
   return {
+    shell: buildShellHtml(runtime),
     overview:
       runtime.renderExecutiveBoard(state.data) +
       runtime.renderTopActionsNow(state.data) +
@@ -19,7 +20,27 @@ function buildViewHtml(runtime) {
     domains: runtime.renderDomainMaster(state.data),
     portfolio: runtime.renderPortfolioView(state.data),
     evidence: runtime.renderEvidenceAudit(state.data),
+    projections: runtime.renderProjectionRegistry(state.data),
   };
+}
+
+function buildShellHtml(runtime) {
+  const { state } = runtime;
+  const contract = runtime.resolveFreshnessContract(state.data, state.history);
+  runtime.state.freshnessContract = contract;
+  runtime.updateFreshnessPill(contract);
+  runtime.render();
+
+  const doc = runtime.__document;
+  return [
+    doc.getElementById('atlas-refresh-btn').innerHTML,
+    doc.getElementById('freshness-status').textContent,
+    doc.getElementById('active-alerts-status').textContent,
+    doc.getElementById('scope-status').textContent,
+    doc.getElementById('period-status').textContent,
+    doc.getElementById('nav').innerHTML,
+    doc.getElementById('view').innerHTML,
+  ].join('\n');
 }
 
 export async function computeViewSignatures() {

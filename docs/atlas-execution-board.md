@@ -1,7 +1,7 @@
 # Atlas Execution Board (V3)
 
 This is the active execution path for `atlas`.
-Snapshot date: 2026-03-09 (updated after `MBE-1110` and epic closure).
+Snapshot date: 2026-03-10 (updated after closing the Atlas next-wave cleanup batch).
 
 ## Board rules
 
@@ -12,68 +12,102 @@ Snapshot date: 2026-03-09 (updated after `MBE-1110` and epic closure).
 - Any irreducibly human-gated blocker goes to `queue:human-only`.
 - Enforce doctrine on every task: `Core decides. Projections explain. Apps render.`
 
-## Current ticket state (Linear)
+## Active project (Linear)
 
-- Total Atlas tickets in project: 21
-- `Needs triage`: 0
-- `Triage`: 0
-- `Todo`: 0
-- `In Progress`: 0
-- `Backlog`: 0
-- `Done`: 21
+- Project: `Atlas`
+- Current wave status:
+  - all active Atlas execution tickets are consolidated under the single `Atlas` project
+  - previous hardening tickets remain in review inside the same project
+  - residual-gap tickets (`MBE-1223`..`MBE-1226`) were folded back into `Atlas`, executed, and closed in the same project
+- dual-machine pattern used in this wave:
+  - `main` local implementation
+  - `mohyi-pro` support lane for review / validation / read-only inspection
+- archived projects:
+  - `[ARCHIVED] Atlas Next Wave`
+  - `[ARCHIVED] Atlas Expert Hardening`
+  - `[ARCHIVED] Atlas Decision Cockpit V3`
+  - `[ARCHIVED] Atlas Cost Governance`
 
-## Wave 0 - Governance baseline (Now)
+## Current wave (Now)
 
-- `MBE-1091` - Baseline gouvernance repo (AGENTS + lessons + docs de pilotage)
-- `MBE-1092` - Contrat de donnees Atlas (schemas versionnes + compatibilite)
+- no active `phase:now` execution ticket is open in Atlas
+- the next implementation batch must be opened only from a newly confirmed gap
+
+## Active lane split (2026-03-10)
+
+### `main`
+
+- ticket actif:
+  - aucun
+- scope:
+  - lane locale terminée pour `MBE-1223`, `MBE-1225`, `MBE-1226`
+  - preuves poussées dans Linear
+  - validations locales terminées
+
+### `mohyi-pro`
+
+- ticket actif:
+  - aucun
+- repo:
+  - `~/work/atlas__next_wave`
+- branche:
+  - `codex/atlas-next-wave-review`
+- scope:
+  - lane distante terminée pour la revue indépendante
+  - validation E2E distante sans collision avec la lane locale
+
+Parallelism rule used:
+- `main` modifie le shell et le consumer Atlas
+- `mohyi-pro` vérifie la wave en lecture seule et challenge la sémantique métier
+- aucun edit concurrent sur la meme famille de fichiers
+
+## Current status
+
+Previous wave in review:
+1. `MBE-1216` - `In Review`
+2. `MBE-1217` - `In Review`
+3. `MBE-1218` - `In Review`
+4. `MBE-1219` - `In Review`
+5. `MBE-1220` - `In Review`
+6. `MBE-1221` - `In Review`
+7. `MBE-1222` - `In Review`
+
+Current execution wave:
+1. `MBE-1223` - shell/operator language cleanup (`Done`)
+2. `MBE-1224` - monitoring semantics hardening (`Done`)
+3. `MBE-1225` - topbar urgency semantics (`Done`)
+4. `MBE-1226` - residual alert recomposition cleanup (`Done`)
+
+## Completed baseline
+
+- `MBE-1091` - Baseline gouvernance repo
+- `MBE-1092` - Contrat de donnees Atlas
 - `MBE-1093` - Registre des projections + consumer contract matrix Atlas
 - `MBE-1094` - Matrice de non-regression et quality gates cockpit
-
-Exit criteria:
-- local governance docs complete
-- data/projection contracts explicit and versioned
-- quality gates executable locally
-
-## Wave 1 - Decision model foundation (Now)
-
-- `MBE-1095` - Decision Priority Score (domaines + alertes)
+- `MBE-1095` - Decision Priority Score
 - `MBE-1096` - Taxonomie d'alertes operationnelles + enrichissement action
 - `MBE-1097` - Freshness contract et stale-data guardrail
-
-Dependencies:
-- requires Wave 0 contract/governance baseline
-
-## Wave 2 - Decision-first surfaces (Now)
-
+- `MBE-1098` - Correlation temporelle 7/30/90j
 - `MBE-1099` - Home cockpit P0
 - `MBE-1100` - Alerts as operational queue
+- `MBE-1101` - Portfolio view
 - `MBE-1102` - Domain master sheet
+- `MBE-1103` - Graph/radar in secondary context
+- `MBE-1104` - Dedicated preuves/audit space
 - `MBE-1105` - Owner + next-action wiring
+- `MBE-1106` - KPI instrumentation 30s/60s/2 clics
+- `MBE-1107` - E2E + visual regression suite
+- `MBE-1108` - Migration plan + feature flags
+- `MBE-1109` - High-risk pilot and top-5 extension
+- `MBE-1110` - Final governance audit + readiness signoff
 
-Dependencies:
-- requires Wave 1 scoring/alert/freshness primitives
+## Post-signoff notes
 
-## Wave 3 - Secondary and scale surfaces (Next)
-
-- `MBE-1098` - Correlation temporelle 7/30/90j (`Done`)
-- `MBE-1101` - Portfolio view (`Done`)
-- `MBE-1103` - Graph/radar in secondary context (`Done`)
-- `MBE-1104` - Dedicated preuves/audit space (P4) (`Done`)
-- `MBE-1106` - KPI instrumentation 30s/60s/2 clics (`Done`)
-- `MBE-1107` - E2E + visual regression suite (`Done`)
-- `MBE-1108` - Migration plan + feature flags (`Done`)
-- `MBE-1109` - High-risk pilot and top-5 extension (`Done`)
-
-## Wave 4 - Closure
-
-- `MBE-1110` - Final governance audit + readiness signoff (`Done`)
-
-## Post-program routing snapshot (2026-03-09)
-
-- Open Atlas tickets in `queue:execution`: `0`
-- Atlas tickets in `queue:human-only`: `0`
-- Proposal execution record:
-  - `MBE-1127` - Post-signoff KPI optimization (`queue:codex-proposal`, project `Codex Proposals`, `Done`)
+- `MBE-1127` - Post-signoff KPI optimization (`queue:codex-proposal`, `Done`)
+- Le hardening actuel existe pour corriger les ruptures de contrat et les signaux encore trop approximatifs, pas pour reouvrir le programme clos.
+- `MBE-1217` a retabli une taxonomie providers canonique partagee entre scan et service-ops.
+- `MBE-1222` a confirme les faux signaux P0 et a motive le retrait des fallbacks non canoniques en UI.
+- `MBE-1223`..`MBE-1226` ont ferme la wave residuelle: plus de vue de comparaison dediee, plus d urgence topbar approximative, plus de faux gaps de coverage, plus de recomposition locale silencieuse des alertes.
 
 ## Mandatory ticket contract
 
