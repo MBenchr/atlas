@@ -30,7 +30,7 @@ Doctrine:
 
 1. Canonical `decisionKpis` were restored in `/Users/mohyi/mcp/scripts/architecture-service-ops-live.mjs`.
 2. Stable `key` / `providerKey` were added to `externalServices` in `/Users/mohyi/mcp/scripts/atlas-scan.mjs`.
-3. The fusion shell was reworked into a single Atlas entrypoint with integrated modes (`Cockpit`, `Comparer`, `Legacy lens`) in `/Users/mohyi/atlas/scripts/fusion-atlas-serve.mjs`.
+3. The fusion shell was reworked into a single Atlas entrypoint with integrated views (`Cockpit`, `Contexte historique`) in `/Users/mohyi/atlas/scripts/fusion-atlas-serve.mjs`.
 4. Refresh chaining now runs:
    - `mcp atlas:generate`
    - site/data sync to Atlas

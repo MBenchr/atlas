@@ -6,6 +6,12 @@
 /Users/mohyi/atlas/run-atlas-fusion.sh
 ```
 
+Commande unique pour redemarrer Atlas avec le code courant et mettre a jour les donnees:
+
+```bash
+cd /Users/mohyi/atlas && npm run start:refresh
+```
+
 Lien opératoire:
 - Atlas intégré: `http://127.0.0.1:4173`
 

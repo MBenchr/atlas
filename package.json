@@ -4,6 +4,7 @@
   "private": true,
   "description": "Atlas local quality gates (MBE-1094)",
   "scripts": {
+    "start:refresh": "zsh -lc 'existing_pid=$(lsof -tiTCP:4173 -sTCP:LISTEN || true); if [ -n \"$existing_pid\" ]; then kill \"$existing_pid\"; fi; /Users/mohyi/atlas/run-atlas-fusion.sh >/tmp/atlas-fusion.log 2>&1 & server_pid=$!; until curl -fsS http://127.0.0.1:4173/ >/dev/null; do sleep 1; done; curl -fsS -X POST http://127.0.0.1:4173/api/refresh; wait \"$server_pid\"'",
     "sync:data": "node scripts/sync-generated-data.mjs",
     "generate:freshness": "node scripts/generate-freshness-contract.mjs",
     "generate:priority": "node scripts/generate-decision-priority.mjs",

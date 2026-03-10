@@ -219,7 +219,7 @@ function htmlShell() {
     <header class="topbar">
       <div class="title">
         <h1>Atlas NEXORA V3 · Cockpit d'architecture</h1>
-        <p>Entrée opératoire unique: cockpit intégré, comparaison ciblée et contexte historique sans exposer plusieurs destinations produit.</p>
+        <p>Entrée opératoire unique: cockpit intégré et contexte historique sans exposer plusieurs destinations produit.</p>
       </div>
       <div class="topbar-right">
         <div class="toolbar">
