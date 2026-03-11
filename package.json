@@ -11,7 +11,7 @@
     "generate:alerts": "node scripts/generate-alerts-taxonomy.mjs",
     "generate:trends": "node scripts/generate-trends-correlation.mjs",
     "generate:audit": "node scripts/generate-audit-index.mjs",
-    "lint": "node scripts/lint-atlas.mjs",
+    "lint": "node scripts/lint-atlas.mjs && node scripts/lint-canonical-guardrails.mjs",
     "typecheck": "node scripts/typecheck-atlas.mjs",
     "test:unit": "node --test tests/unit/*.test.mjs",
     "test:contracts": "node scripts/validate-atlas-contracts.mjs && node --test tests/contracts/*.test.mjs",

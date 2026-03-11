@@ -3,6 +3,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import { assertServiceOpsGuardrails } from './lib/service-ops-guardrails.mjs';
 
 const ROOT = process.cwd();
 const MAX_AGE_HOURS = Number(process.env.ATLAS_MAX_DATA_AGE_HOURS || 48);
@@ -196,43 +197,6 @@ function assertAuditIndex(auditIndex, atlasHistory) {
   }
 }
 
-function assertDecisionKpis(serviceOpsReport) {
-  const decisionKpis = serviceOpsReport?.decisionKpis;
-  if (!decisionKpis || typeof decisionKpis !== 'object') {
-    throw new Error('architecture-service-ops-live-report.decisionKpis must be present');
-  }
-
-  const targets = decisionKpis.targets || {};
-  if (!Number.isFinite(Number(targets.timeToFirstPrioritySec))) {
-    throw new Error('decisionKpis.targets.timeToFirstPrioritySec invalid');
-  }
-  if (!Number.isFinite(Number(targets.timeToRationaleSec))) {
-    throw new Error('decisionKpis.targets.timeToRationaleSec invalid');
-  }
-  if (!Number.isFinite(Number(targets.clicksToOwnerAction))) {
-    throw new Error('decisionKpis.targets.clicksToOwnerAction invalid');
-  }
-  if (!Number.isFinite(Number(targets.drilldownRateMin))) {
-    throw new Error('decisionKpis.targets.drilldownRateMin invalid');
-  }
-
-  for (const section of ['baselineBeforeRefactor', 'postRefactorBaseline']) {
-    const row = decisionKpis[section] || {};
-    if (!Number.isFinite(Number(row.timeToFirstPrioritySec))) {
-      throw new Error(`decisionKpis.${section}.timeToFirstPrioritySec invalid`);
-    }
-    if (!Number.isFinite(Number(row.timeToRationaleSec))) {
-      throw new Error(`decisionKpis.${section}.timeToRationaleSec invalid`);
-    }
-    if (!Number.isFinite(Number(row.clicksToOwnerAction))) {
-      throw new Error(`decisionKpis.${section}.clicksToOwnerAction invalid`);
-    }
-    if (!Number.isFinite(Number(row.drilldownRate))) {
-      throw new Error(`decisionKpis.${section}.drilldownRate invalid`);
-    }
-  }
-}
-
 async function main() {
   const manifest = await readJson('data/contracts/manifest.json');
 
@@ -259,7 +223,7 @@ async function main() {
   const auditIndex = await readJson('data/history/atlas-audit-index.json');
   assertAuditIndex(auditIndex, atlasHistory);
   const serviceOpsReport = await readJson('data/architecture-service-ops-live-report.json');
-  assertDecisionKpis(serviceOpsReport);
+  assertServiceOpsGuardrails(serviceOpsReport);
 
   const [appJs, indexHtml, stylesCss] = await Promise.all([
     readText('app.js'),

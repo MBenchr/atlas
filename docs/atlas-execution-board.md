@@ -1,7 +1,7 @@
 # Atlas Execution Board (V3)
 
 This is the active execution path for `atlas`.
-Snapshot date: 2026-03-10 (updated after closing the Atlas next-wave cleanup batch).
+Snapshot date: 2026-03-11 (updated after opening the guardrails semantic batch).
 
 ## Board rules
 
@@ -30,35 +30,39 @@ Snapshot date: 2026-03-10 (updated after closing the Atlas next-wave cleanup bat
 
 ## Current wave (Now)
 
-- no active `phase:now` execution ticket is open in Atlas
-- the next implementation batch must be opened only from a newly confirmed gap
+- newly confirmed gap batch opened for semantic guardrails and anti-drift
+- active tickets:
+  1. `MBE-1229` - service-ops local contract
+  2. `MBE-1230` - smoke semantic assertions
+  3. `MBE-1231` - anti-recomputation local guardrail
 
 ## Active lane split (2026-03-10)
 
 ### `main`
 
 - ticket actif:
-  - aucun
+  - `MBE-1229`
+  - `MBE-1230`
 - scope:
-  - lane locale terminée pour `MBE-1223`, `MBE-1225`, `MBE-1226`
-  - preuves poussées dans Linear
-  - validations locales terminées
+  - helper de validation `service-ops`
+  - contrat local `service-ops`
+  - smoke sémantique Atlas
 
 ### `mohyi-pro`
 
 - ticket actif:
-  - aucun
+  - `MBE-1231` (review / validation lane)
 - repo:
-  - `~/work/atlas__next_wave`
+  - `~/work/atlas_guardrails`
 - branche:
-  - `codex/atlas-next-wave-review`
+  - `codex/atlas-guardrails-review`
 - scope:
-  - lane distante terminée pour la revue indépendante
-  - validation E2E distante sans collision avec la lane locale
+  - review indépendante du harness / lint guardrail
+  - validation distante sans collision avec la lane locale
 
 Parallelism rule used:
-- `main` modifie le shell et le consumer Atlas
-- `mohyi-pro` vérifie la wave en lecture seule et challenge la sémantique métier
+- `main` modifie les scripts, contrats et quality gates Atlas
+- `mohyi-pro` vérifie la wave dans un clone isolé et challenge la sémantique métier
 - aucun edit concurrent sur la meme famille de fichiers
 
 ## Current status

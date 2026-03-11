@@ -40,11 +40,14 @@ const REQUIRED_PATHS = [
   'tests/e2e/domain.spec.test.mjs',
   'tests/e2e/portfolio.spec.test.mjs',
   'tests/e2e/visual-regression.spec.test.mjs',
+  'tests/contracts/service-ops.contract.test.mjs',
   'data/architecture-service-ops-live-report.json',
   'data/contracts/manifest.json',
   'data/history/atlas-audit-index.json',
   'scripts/generate-audit-index.mjs',
-  'scripts/validate-atlas-contracts.mjs'
+  'scripts/validate-atlas-contracts.mjs',
+  'scripts/lint-canonical-guardrails.mjs',
+  'scripts/lib/service-ops-guardrails.mjs'
 ];
 
 async function assertExists(relativePath) {
@@ -96,6 +99,8 @@ async function main() {
     await readJson(config.dataFile);
     await readJson(config.schemaFile);
   }
+
+  await assertExists('scripts/lint-canonical-guardrails.mjs');
 
   console.log(`Atlas lint checks passed (${datasetEntries.length} contract datasets validated as JSON).`);
 }

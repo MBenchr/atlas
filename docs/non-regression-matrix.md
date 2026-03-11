@@ -14,10 +14,10 @@ Doctrine:
 
 | Gate | Command | Coverage | Blocking condition |
 |---|---|---|---|
-| Lint | `npm run lint` | governance files, contract manifest presence, JSON readability | missing governance/contract files or invalid JSON |
+| Lint | `npm run lint` | governance files, contract manifest presence, JSON readability, canonical non-recompute markers | missing governance/contract files, invalid JSON, or regression on explicit non-canonical fallback markers |
 | Typecheck | `npm run typecheck` | JS/MJS syntax on `app.js`, `scripts/`, `tests/` | syntax error |
 | Unit | `npm run test:unit` | decision-priority scoring formula, severity ordering, tie-break stability | score ordering/tie-break regression |
-| Contracts | `npm run test:contracts` | projection registry coverage, consumer authorization, compatibility policy | missing/invalid contract declaration |
+| Contracts | `npm run test:contracts` | projection registry coverage, consumer authorization, compatibility policy, service-ops projection contract | missing/invalid contract declaration |
 | E2E ciblées | `npm run test:e2e` | decision navigation + scenario flows (alerts/domain/portfolio/evidence), drill-down/detail panel, CTA presence, cockpit shell markers | missing decision-flow behavior markers |
 | Smoke | `npm run test:smoke` | data freshness, minimal dataset integrity, critical UI markers | stale/broken data or missing critical UI anchors |
 
@@ -86,6 +86,11 @@ Smoke gate enforces:
 - presence and integrity of `atlas-history.trendsCorrelation` (windows `7d/30d/90d`, notable events, domain windows)
 - presence and integrity of `data/history/atlas-audit-index.json` (artifact list + snapshot coverage)
 - presence and integrity of `data/architecture-service-ops-live-report.json.decisionKpis` (targets + before/after baselines)
+- semantic integrity of `data/architecture-service-ops-live-report.json.summary` and `serviceCoverage`
+  - service state counts must add up to `totalServices`
+  - `matchedCount <= detectedCount`
+  - `platformMonitoredOnlyCount + unexpectedMonitoredWithoutDetectionCount = monitoredWithoutDetectionCount`
+  - summary counters must stay aligned with `serviceCoverage`
 - non-empty `domainProfiles`, `projectionRegistry`, `roadmap`
 
 Recommended generation sequence before quality run:

@@ -755,3 +755,36 @@ Guardrail added:
 Proof:
 - `npm run check`
 - `data/atlas-data.json > pilotRollout.kpiMeasurements.afterOptimization`
+
+---
+
+## 2026-03-11 - Service-ops semantic guardrails
+
+Date:
+2026-03-11
+
+Context:
+Atlas already validated the presence of `decisionKpis`, `freshnessContract`, and `alertsTaxonomy`, but key `service-ops` operator semantics were still protected mostly by convention.
+
+Failure mode:
+`architecture-service-ops-live-report.json` could drift semantically while staying syntactically present, producing false-green smoke runs and silent degradation on service coverage semantics.
+
+Root cause:
+No shared local guardrail asserted:
+- service state counts vs `totalServices`
+- semantic alignment between `summary` and `serviceCoverage`
+- bounded coverage counters (`matched`, `platformMonitoredOnly`, `unexpectedMonitoredWithoutDetection`)
+
+Guardrail added:
+- shared validator: `scripts/lib/service-ops-guardrails.mjs`
+- local contract test: `tests/contracts/service-ops.contract.test.mjs`
+- smoke now reuses the same semantic validator
+- non-regression matrix updated with service-ops semantic assertions
+
+Proof:
+- `npm run test:contracts`
+- `npm run test:smoke`
+- `npm run check`
+
+Follow-up:
+- keep future `service-ops` field additions on the same shared validator path instead of introducing parallel checks
