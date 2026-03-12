@@ -93,6 +93,33 @@ async function pathExistsAbsolute(absolutePath) {
   }
 }
 
+async function collectFilesRecursively(relativeDir) {
+  const startAbsolute = path.join(ROOT, relativeDir);
+  const collected = [];
+
+  async function walk(currentAbsolute) {
+    const entries = await fs.readdir(currentAbsolute, { withFileTypes: true });
+    for (const entry of entries) {
+      const absolute = path.join(currentAbsolute, entry.name);
+      if (entry.isDirectory()) {
+        // eslint-disable-next-line no-await-in-loop
+        await walk(absolute);
+        continue;
+      }
+      if (!entry.isFile()) continue;
+      collected.push(path.relative(ROOT, absolute));
+    }
+  }
+
+  try {
+    await walk(startAbsolute);
+  } catch {
+    return [];
+  }
+
+  return collected.sort((a, b) => a.localeCompare(b));
+}
+
 function normalizeText(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
 }
@@ -533,13 +560,59 @@ async function evaluateServiceOpsGuardrails(control) {
 }
 
 async function evaluateLocalFirstPolicy(control) {
-  return warnControl(
-    control,
-    'Local-first/no-remote-mutation policy requires human/process verification (not fully automatable in static repo checks).',
-    {
-      evidence: [path.join(ROOT, 'AGENTS.md')],
+  const scriptFiles = await collectFilesRecursively('scripts');
+  const scanTargets = [
+    'AGENTS.md',
+    'package.json',
+    'run-atlas-fusion.sh',
+    ...scriptFiles.filter((file) => /\.(mjs|js|sh|json)$/i.test(file))
+  ];
+
+  const riskyPatterns = [
+    { id: 'git-push', regex: /\bgit\s+push\b/i },
+    { id: 'wrangler-deploy', regex: /\bwrangler\s+deploy\b/i },
+    { id: 'vercel-deploy', regex: /\bvercel\b.*\b(deploy|--prod)\b/i },
+    { id: 'render-deploy', regex: /\brender\b.*\bdeploy\b/i },
+    { id: 'firebase-deploy', regex: /\bfirebase\s+deploy\b/i },
+    { id: 'kubectl-apply', regex: /\bkubectl\s+(apply|patch|replace|delete)\b/i },
+    { id: 'terraform-apply', regex: /\bterraform\s+apply\b/i },
+    { id: 'gcloud-deploy', regex: /\bgcloud\b.*\bdeploy\b/i },
+  ];
+
+  const hits = [];
+  const scanned = [];
+
+  for (const relativePath of scanTargets) {
+    // eslint-disable-next-line no-await-in-loop
+    const exists = await pathExists(relativePath);
+    if (!exists) continue;
+
+    // eslint-disable-next-line no-await-in-loop
+    const content = await readText(relativePath);
+    scanned.push(path.join(ROOT, relativePath));
+    const lines = content.split(/\r?\n/);
+
+    for (let index = 0; index < lines.length; index += 1) {
+      const line = lines[index];
+      if (line.includes('regex:')) continue;
+      for (const pattern of riskyPatterns) {
+        if (pattern.regex.test(line)) {
+          hits.push(`${relativePath}:${index + 1} [${pattern.id}] ${line.trim()}`);
+        }
+      }
     }
-  );
+  }
+
+  if (hits.length > 0) {
+    return failControl(control, 'Potential remote mutation command(s) detected in repo scripts/config.', {
+      evidence: scanned.slice(0, 20),
+      output: hits.slice(0, 20),
+    });
+  }
+
+  return passControl(control, `Static local-first guardrail passed (${scanned.length} file(s) scanned, no risky remote mutation command found).`, {
+    evidence: scanned.slice(0, 20),
+  });
 }
 
 async function evaluateCommandControl(control) {
