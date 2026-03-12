@@ -49,9 +49,11 @@ Top-level fields:
 - `summary.controls`: pass/fail/warn counts for controls
 - `summary.rules`: pass/fail/warn/manual counts for extracted rules
 - `summary.deviationCount`: total non-pass rule rows
+- `summary.priorityQueueCount`: nombre total d’actions priorisées PO
 - `controls[]`: executable controls, command output, evidence paths
 - `rules[]`: extracted rule inventory + linked control IDs + status
 - `deviations[]`: actionable list of gaps with source location
+- `priorityQueue[]`: backlog priorisé (rang, score d’impact, scope repo, action recommandée)
 - `sourceCoverage`: overlap between scanned rule sources and control-verified governance sources
 - `repoGovernance`: cross-repo governance baseline status
   (`AGENTS.md`, `tasks/lessons.md`, markers `decision-stack|linear|doctrine|local-first`)

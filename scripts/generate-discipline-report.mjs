@@ -961,6 +961,83 @@ function summarizeRepoGovernance(rows) {
   return summary;
 }
 
+function buildPriorityQueue(deviations, repoRows) {
+  const queue = [];
+  const severityByStatus = {
+    fail: 'critical',
+    warn: 'high',
+    manual: 'medium',
+  };
+  const baseScoreByStatus = {
+    fail: 100,
+    warn: 70,
+    manual: 55,
+  };
+
+  for (const row of deviations) {
+    const status = String(row.status || 'warn').toLowerCase();
+    const linkedControls = Array.isArray(row.linkedControls) ? row.linkedControls : [];
+    const failControls = linkedControls.filter((control) => String(control.status || '').toLowerCase() === 'fail').length;
+    const warnControls = linkedControls.filter((control) => String(control.status || '').toLowerCase() === 'warn').length;
+    const coreGovernanceBoost =
+      /AGENTS\.md|atlas-decision-stack\.md|non-regression-matrix\.md/i.test(String(row.sourceFile || '')) ? 10 : 0;
+
+    const score = Number(baseScoreByStatus[status] || 50) + failControls * 15 + warnControls * 8 + coreGovernanceBoost;
+    let action = 'Maintenir la règle couverte et relancer les gates.';
+    if (status === 'fail') action = 'Corriger le contrôle en échec puis relancer npm run generate:discipline.';
+    else if (status === 'warn') action = "Lever l'avertissement en automatisant la vérification ou en corrigeant la dérive.";
+    else if (status === 'manual') action = "Créer un contrôle automatisé pour supprimer la dette de vérification manuelle.";
+
+    queue.push({
+      id: `deviation:${row.ruleId}`,
+      type: 'rule-deviation',
+      repo: 'ATLAS',
+      severity: severityByStatus[status] || 'high',
+      score,
+      status,
+      title: row.text,
+      reason: row.statusReason,
+      location: `${row.sourceFile}:${Number(row.sourceLine || 0)}`,
+      sourceAbsolutePath: row.sourceAbsolutePath,
+      action,
+      evidence: linkedControls.flatMap((control) => (Array.isArray(control.evidence) ? control.evidence : [])).slice(0, 5),
+    });
+  }
+
+  for (const row of repoRows) {
+    const status = String(row.status || 'pass').toLowerCase();
+    if (status === 'pass') continue;
+
+    const missingFilesCount = Number(row.missingFiles?.length || 0);
+    const markerGapCount = Number(row.markerGaps?.length || 0);
+    const score = (status === 'fail' ? 95 : 65) + missingFilesCount * 10 + markerGapCount * 5;
+    const severity = status === 'fail' ? 'critical' : 'high';
+    const markerLabel = markerGapCount ? ` (${row.markerGaps.join(', ')})` : '';
+    const action =
+      status === 'fail'
+        ? `Créer les fichiers gouvernance requis pour ${row.repo}, puis relancer l'audit discipline.`
+        : `Compléter les markers AGENTS de ${row.repo}${markerLabel} et relancer l'audit discipline.`;
+
+    queue.push({
+      id: `repo-governance:${String(row.repo || 'unknown').toLowerCase()}`,
+      type: 'repo-governance',
+      repo: row.repo,
+      severity,
+      score,
+      status,
+      title: `Gouvernance ${row.repo}`,
+      reason: row.statusReason,
+      location: row.path || 'n/d',
+      sourceAbsolutePath: row.path || null,
+      action,
+      evidence: Array.isArray(row.evidence) ? row.evidence.slice(0, 5) : [],
+    });
+  }
+
+  const ordered = queue.sort((a, b) => b.score - a.score || String(a.id).localeCompare(String(b.id)));
+  return ordered.map((item, index) => ({ ...item, rank: index + 1 }));
+}
+
 function parseRepoNameFromPath(repoPath, fallbackName = 'unknown') {
   const normalized = String(repoPath || '').trim();
   if (!normalized) return String(fallbackName || 'unknown');
@@ -1135,6 +1212,7 @@ async function main() {
   const controlSummary = summarizeControls(controlResults);
   const ruleSummary = summarizeRules(ruleResults);
   const sourceCoverage = summarizeSourceCoverage(sourceSummary);
+  const priorityQueue = buildPriorityQueue(deviations, repoGovernance.repos || []);
 
   const payload = {
     generatedAt: nowIso(),
@@ -1150,10 +1228,12 @@ async function main() {
       controls: controlSummary,
       rules: ruleSummary,
       deviationCount: deviations.length,
+      priorityQueueCount: priorityQueue.length,
     },
     controls: controlResults,
     rules: ruleResults,
     deviations,
+    priorityQueue,
   };
 
   const outputAbsolutePath = path.join(ROOT, OUTPUT_PATH);
@@ -1167,6 +1247,7 @@ async function main() {
   console.log(`Controls: ${controlSummary.pass} pass / ${controlSummary.fail} fail / ${controlSummary.warn} warn`);
   console.log(`Rules: ${ruleSummary.pass} pass / ${ruleSummary.fail} fail / ${ruleSummary.warn} warn / ${ruleSummary.manual} manual`);
   console.log(`Deviations listed: ${deviations.length}`);
+  console.log(`Priority queue items: ${priorityQueue.length}`);
   console.log(`Warnings/manual noted: ${warnCount}`);
 
   if (FULL_MODE && failCount > 0) {

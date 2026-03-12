@@ -4240,6 +4240,7 @@ function renderDisciplineDashboard() {
   const controls = Array.isArray(report?.controls) ? report.controls : [];
   const sourceSummary = Array.isArray(report?.sourceSummary) ? report.sourceSummary : [];
   const sourceCoverage = report?.sourceCoverage || {};
+  const priorityQueue = Array.isArray(report?.priorityQueue) ? report.priorityQueue : [];
   const repoGovernance = report?.repoGovernance || null;
   const repoRows = Array.isArray(repoGovernance?.repos) ? repoGovernance.repos : [];
   const repoSummary = repoGovernance?.summary || {};
@@ -4334,6 +4335,48 @@ function renderDisciplineDashboard() {
             : '<div class="discipline-action-item"><span class="badge pass">PASS</span><div>Aucun écart actif détecté sur le rapport courant.</div></div>'
         }
       </div>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <h3>Backlog PO priorisé (Vague 2)</h3>
+        <span class="badge ${priorityQueue.length ? "warn" : "pass"}">${priorityQueue.length} item(s)</span>
+      </div>
+      ${
+        priorityQueue.length
+          ? `
+            <table>
+              <thead>
+                <tr>
+                  <th>Rang</th>
+                  <th>Sévérité</th>
+                  <th>Scope</th>
+                  <th>Sujet</th>
+                  <th>Localisation</th>
+                  <th>Action recommandée</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${priorityQueue
+                  .slice(0, 20)
+                  .map(
+                    (item) => `
+                      <tr>
+                        <td><span class="badge">${Number(item.rank || 0)} · score ${Number(item.score || 0)}</span></td>
+                        <td><span class="badge ${statusBadge(item.status)}">${safe(String(item.severity || item.status || "high"))}</span></td>
+                        <td><strong>${safe(item.repo || "ATLAS")}</strong><br /><span class="mono">${safe(item.type || "rule-deviation")}</span></td>
+                        <td>${safe(item.title || "n/d")}<br /><span class="mono">${safe(item.reason || "n/d")}</span></td>
+                        <td class="mono">${safe(normalizePath(item.location || item.sourceAbsolutePath || "n/d"))}</td>
+                        <td>${safe(item.action || "n/d")}</td>
+                      </tr>
+                    `
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+          `
+          : '<p class="mono">Aucun backlog prioritaire: discipline stable sur le rapport courant.</p>'
+      }
     </section>
 
     <section class="card">
