@@ -4327,6 +4327,7 @@ function renderDisciplineDashboard() {
                       <div>
                         <div>${safe(row.text || "n/d")}</div>
                         <div class="mono">${safe(normalizePath(row.sourceAbsolutePath || row.sourceFile))}:${Number(row.sourceLine || 0)}</div>
+                        <div class="mono">${safe(row.primaryRemediationCommand || "npm run generate:discipline")}</div>
                       </div>
                     </div>
                   `
@@ -4354,6 +4355,7 @@ function renderDisciplineDashboard() {
                   <th>Sujet</th>
                   <th>Localisation</th>
                   <th>Action recommandée</th>
+                  <th>Commande</th>
                 </tr>
               </thead>
               <tbody>
@@ -4368,6 +4370,10 @@ function renderDisciplineDashboard() {
                         <td>${safe(item.title || "n/d")}<br /><span class="mono">${safe(item.reason || "n/d")}</span></td>
                         <td class="mono">${safe(normalizePath(item.location || item.sourceAbsolutePath || "n/d"))}</td>
                         <td>${safe(item.action || "n/d")}</td>
+                        <td>
+                          <div class="mono">${safe(item.remediationCommand || "npm run generate:discipline")}</div>
+                          <div>${safe(item.remediationObjective || "Régénérer le rapport discipline.")}</div>
+                        </td>
                       </tr>
                     `
                   )
@@ -4494,6 +4500,7 @@ function renderDisciplineDashboard() {
                   <th>Localisation</th>
                   <th>Contrôles liés</th>
                   <th>Raison</th>
+                  <th>Commande (fix)</th>
                 </tr>
               </thead>
               <tbody>
@@ -4517,6 +4524,10 @@ function renderDisciplineDashboard() {
                             : '<span class="badge warn">non-couvert</span>'}
                         </td>
                         <td>${safe(row.statusReason || "n/d")}</td>
+                        <td>
+                          <div class="mono">${safe(row.primaryRemediationCommand || "npm run generate:discipline")}</div>
+                          <div>${safe(row.primaryRemediationObjective || "Régénérer le rapport discipline.")}</div>
+                        </td>
                       </tr>
                     `;
                   })

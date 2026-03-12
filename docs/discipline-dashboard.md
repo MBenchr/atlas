@@ -53,7 +53,9 @@ Top-level fields:
 - `controls[]`: executable controls, command output, evidence paths
 - `rules[]`: extracted rule inventory + linked control IDs + status
 - `deviations[]`: actionable list of gaps with source location
+  (includes `remediationHints[]`, `primaryRemediationCommand`, `primaryRemediationObjective`)
 - `priorityQueue[]`: backlog priorisé (rang, score d’impact, scope repo, action recommandée)
+  (includes `remediationCommand`, `remediationObjective`)
 - `sourceCoverage`: overlap between scanned rule sources and control-verified governance sources
 - `repoGovernance`: cross-repo governance baseline status
   (`AGENTS.md`, `tasks/lessons.md`, markers `decision-stack|linear|doctrine|local-first`)

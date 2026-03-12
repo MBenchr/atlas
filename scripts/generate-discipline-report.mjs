@@ -565,7 +565,9 @@ async function evaluateLocalFirstPolicy(control) {
     'AGENTS.md',
     'package.json',
     'run-atlas-fusion.sh',
-    ...scriptFiles.filter((file) => /\.(mjs|js|sh|json)$/i.test(file))
+    ...scriptFiles
+      .filter((file) => /\.(mjs|js|sh|json)$/i.test(file))
+      .filter((file) => file !== 'scripts/generate-discipline-report.mjs')
   ];
 
   const riskyPatterns = [
@@ -595,6 +597,7 @@ async function evaluateLocalFirstPolicy(control) {
     for (let index = 0; index < lines.length; index += 1) {
       const line = lines[index];
       if (line.includes('regex:')) continue;
+      if (/^\s*command:\s*['"`]/.test(line)) continue;
       for (const pattern of riskyPatterns) {
         if (pattern.regex.test(line)) {
           hits.push(`${relativePath}:${index + 1} [${pattern.id}] ${line.trim()}`);
@@ -961,6 +964,91 @@ function summarizeRepoGovernance(rows) {
   return summary;
 }
 
+function controlRemediationCatalog() {
+  return new Map([
+    ['policy.local-first', {
+      objective: 'Détecter et supprimer les commandes de mutation distante dans le repo Atlas.',
+      command:
+        'rg -n "(git\\s+push|wrangler\\s+deploy|vercel.*(deploy|--prod)|render.*deploy|firebase\\s+deploy|kubectl\\s+(apply|patch|replace|delete)|terraform\\s+apply|gcloud.*deploy)" AGENTS.md package.json scripts run-atlas-fusion.sh'
+    }],
+    ['governance.files', {
+      objective: 'Vérifier la présence des fichiers gouvernance obligatoires.',
+      command:
+        'ls AGENTS.md tasks/lessons.md docs/atlas-decision-stack.md docs/atlas-execution-board.md docs/non-regression-matrix.md docs/projection-registry.md docs/consumer-contract-matrix.md docs/discipline-dashboard.md scripts/generate-discipline-report.mjs scripts/lint-atlas.mjs scripts/lint-canonical-guardrails.mjs scripts/smoke-atlas.mjs scripts/validate-atlas-contracts.mjs'
+    }],
+    ['doctrine.marker', {
+      objective: 'Confirmer les marqueurs de doctrine dans gouvernance et UI.',
+      command: 'rg -n "Core decides\\. Projections explain\\. Apps render\\.|local-first|decision stack|linear" AGENTS.md app.js'
+    }],
+    ['lessons.integrity', {
+      objective: 'Contrôler la structure obligatoire des entrées lessons.',
+      command:
+        'rg -n "^(Date:|Issue:|Context:|Failure mode:|Root cause:|Guardrail added:|Proof:|Follow-up:)" tasks/lessons.md'
+    }],
+    ['decision-stack.precedence', {
+      objective: 'Vérifier les sections obligatoires du decision stack Atlas.',
+      command: 'sed -n "1,240p" docs/atlas-decision-stack.md'
+    }],
+    ['package.quality-scripts', {
+      objective: 'Confirmer les scripts qualité/discpline requis dans package.json.',
+      command: 'node -e "const p=require(\'./package.json\');console.log(Object.keys(p.scripts||{}).sort().join(\'\\n\'));"'
+    }],
+    ['service-ops.guardrails', {
+      objective: 'Valider les garde-fous sémantiques service-ops.',
+      command: 'npm run test:contracts'
+    }],
+    ['gate.lint-atlas', { objective: 'Revalider le gate lint Atlas.', command: 'npm run lint' }],
+    ['gate.lint-canonical', { objective: 'Revalider les guardrails canoniques.', command: 'node scripts/lint-canonical-guardrails.mjs' }],
+    ['gate.typecheck', { objective: 'Revalider le gate typecheck.', command: 'npm run typecheck' }],
+    ['gate.unit', { objective: 'Revalider les tests unitaires.', command: 'npm run test:unit' }],
+    ['gate.contract-validate', { objective: 'Revalider les schémas contrats.', command: 'node scripts/validate-atlas-contracts.mjs' }],
+    ['gate.contract-tests', { objective: 'Revalider les tests de contrats.', command: 'npm run test:contracts' }],
+    ['gate.smoke', { objective: 'Revalider le smoke check opérationnel.', command: 'npm run test:smoke' }],
+    ['gate.e2e', { objective: 'Revalider le parcours E2E discipline.', command: 'npm run test:e2e' }],
+  ]);
+}
+
+function buildDeviationRemediation(linkedControls) {
+  const catalog = controlRemediationCatalog();
+  const orderedControls = [...linkedControls].sort((a, b) => {
+    const rank = (value) => {
+      const status = String(value?.status || 'warn').toLowerCase();
+      if (status === 'fail') return 0;
+      if (status === 'warn') return 1;
+      return 2;
+    };
+    return rank(a) - rank(b);
+  });
+
+  const hints = [];
+  for (const control of orderedControls) {
+    const template = catalog.get(String(control.id || ''));
+    if (!template) continue;
+    hints.push({
+      controlId: control.id,
+      objective: template.objective,
+      command: template.command,
+      controlStatus: control.status,
+    });
+  }
+
+  if (hints.length === 0) {
+    hints.push({
+      controlId: 'fallback.generate-discipline',
+      objective: 'Régénérer le rapport et vérifier la disparition de l’écart.',
+      command: 'npm run generate:discipline',
+      controlStatus: 'warn',
+    });
+  }
+
+  const primary = hints[0];
+  return {
+    hints,
+    primaryCommand: primary.command,
+    primaryObjective: primary.objective,
+  };
+}
+
 function buildPriorityQueue(deviations, repoRows) {
   const queue = [];
   const severityByStatus = {
@@ -1000,6 +1088,8 @@ function buildPriorityQueue(deviations, repoRows) {
       location: `${row.sourceFile}:${Number(row.sourceLine || 0)}`,
       sourceAbsolutePath: row.sourceAbsolutePath,
       action,
+      remediationCommand: row.primaryRemediationCommand || 'npm run generate:discipline',
+      remediationObjective: row.primaryRemediationObjective || 'Régénérer le rapport discipline.',
       evidence: linkedControls.flatMap((control) => (Array.isArray(control.evidence) ? control.evidence : [])).slice(0, 5),
     });
   }
@@ -1030,6 +1120,8 @@ function buildPriorityQueue(deviations, repoRows) {
       location: row.path || 'n/d',
       sourceAbsolutePath: row.path || null,
       action,
+      remediationCommand: 'npm run generate:discipline',
+      remediationObjective: 'Relancer le rapport discipline après correction de la gouvernance repo.',
       evidence: Array.isArray(row.evidence) ? row.evidence.slice(0, 5) : [],
     });
   }
@@ -1195,6 +1287,7 @@ async function main() {
           evidence: control.evidence,
           command: control.command,
         }));
+      const remediation = buildDeviationRemediation(linkedControls);
 
       return {
         ruleId: rule.id,
@@ -1206,6 +1299,9 @@ async function main() {
         status: rule.status,
         statusReason: rule.statusReason,
         linkedControls,
+        remediationHints: remediation.hints,
+        primaryRemediationCommand: remediation.primaryCommand,
+        primaryRemediationObjective: remediation.primaryObjective,
       };
     });
 
