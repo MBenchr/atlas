@@ -717,10 +717,19 @@ Follow-up:
 Date:
 2026-03-09
 
+Issue:
+`Post-program Atlas triage sweep`
+
 Context:
 After closure (`MBE-1090`, `MBE-1110` done), Atlas needed an explicit triage pass to keep execution wave clean and route only residual non-blocking work.
 
-Guardrail applied:
+Failure mode:
+Residual work could leak back into `queue:execution` and re-open an active wave without architecture-critical justification.
+
+Root cause:
+No explicit post-closure triage checkpoint was recorded in lessons memory to enforce queue routing discipline.
+
+Guardrail added:
 - verified open Atlas `queue:execution` items = `0`
 - verified Atlas `queue:human-only` blockers = `0`
 - created/routed `MBE-1127` in `queue:codex-proposal` for KPI residual variance optimization
@@ -728,6 +737,9 @@ Guardrail applied:
 Proof:
 - Linear labels/status sweep (`alignment:atlas`, `repo:atlas`, `queue:*`)
 - board snapshot updated in `docs/atlas-execution-board.md`
+
+Follow-up:
+- keep post-closure triage logging mandatory before starting any new `phase:now` execution batch
 
 ---
 
@@ -742,6 +754,9 @@ Issue:
 Context:
 Post-signoff KPI evidence still showed a minor gap on first-priority latency and owner-action clicks (`31.8s`, `2.1`) on pilot domains.
 
+Failure mode:
+Cockpit could stay slightly above the `30s/60s/2 clics` objective, weakening the governance claim of fully optimized decision flow.
+
 Root cause:
 - top-priority action required extra navigation in common path (`overview` -> `alerts` -> state action)
 - first-priority timestamp depended on explicit interaction despite immediate top-priority visibility in cockpit
@@ -755,6 +770,9 @@ Guardrail added:
 Proof:
 - `npm run check`
 - `data/atlas-data.json > pilotRollout.kpiMeasurements.afterOptimization`
+
+Follow-up:
+- keep KPI optimization path validated on each future cockpit navigation refactor touching owner-action or priority timing
 
 ---
 

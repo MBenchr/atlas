@@ -5,6 +5,7 @@ const VIEWS = [
   { id: "history", label: "Historique", icon: "history", group: "pilotage", hint: "Évolution temporelle" },
   { id: "domains", label: "Domaines", icon: "domain", group: "architecture", hint: "Ownership et discipline" },
   { id: "projections", label: "Projections", icon: "projection", group: "architecture", hint: "Read-path canonique" },
+  { id: "discipline", label: "Discipline", icon: "governance", group: "architecture", hint: "Écarts et conformité" },
   { id: "evidence", label: "Preuves", icon: "validation", group: "trajectoire", hint: "Audit et exports" },
   { id: "roadmap", label: "Trajectoire", icon: "roadmap", group: "trajectoire", hint: "Plan d'exécution" },
 ];
@@ -66,6 +67,7 @@ const state = {
   previousSnapshot: null,
   auditIndex: null,
   serviceOpsReport: null,
+  disciplineReport: null,
   rolloutFlags: null,
   decisionKpiContract: null,
   decisionKpiSession: null,
@@ -225,6 +227,15 @@ const VIEW_EXPLANATIONS = {
       "Projection canonique: une seule source de lecture partagée.",
       "Statut: canonique, dupliquée ou manquante.",
       "Responsable explicite: indispensable pour éviter la dérive.",
+    ],
+  },
+  discipline: {
+    title: "Ce que montre cette vue",
+    summary: "Audit unifié des règles de discipline, des contrôles automatiques et des écarts localisés.",
+    bullets: [
+      "Règles extraites depuis AGENTS, lessons, decision stack et non-regression matrix.",
+      "Contrôles: pass/fail/warn avec commande, preuve et sortie associée.",
+      "Écarts localisés: fichier + ligne + contrôle en cause pour correction rapide.",
     ],
   },
   domains: {
@@ -1879,6 +1890,7 @@ function buildViewIndicators(data) {
   const pendingRoadmap = (data.roadmap || []).filter((step) => String(step.status || "").toLowerCase() !== "done").length;
   const portfolioHot = portfolioRows.filter((row) => row.risk >= 55).length;
   const evidenceCount = Array.isArray(auditIndex?.artifacts) ? auditIndex.artifacts.length : 0;
+  const disciplineDeviationCount = Number(state.disciplineReport?.summary?.deviationCount || 0);
 
   return {
     overview: `${averageScore}/100`,
@@ -1887,6 +1899,7 @@ function buildViewIndicators(data) {
     history: `${snapshotsCount}`,
     domains: `${data.domainProfiles?.length || 0}`,
     projections: `${data.projectionRegistry?.length || 0}`,
+    discipline: `${disciplineDeviationCount}`,
     evidence: `${evidenceCount}`,
     graph: `${data.graph?.nodes?.length || 0}`,
     radar: `${data.domainProfiles?.length || 0}`,
@@ -4209,6 +4222,359 @@ function renderProjectionRegistry(data) {
   `;
 }
 
+function renderDisciplineDashboard() {
+  const report = state.disciplineReport;
+  if (!report) {
+    return `
+      <section class="card">
+        <h3>Discipline dashboard indisponible</h3>
+        <p class="mono">Le rapport canonique n'est pas chargé: data/history/atlas-discipline-report.json</p>
+        <p>Exécute <code>npm run generate:discipline</code> (quick) ou <code>npm run audit:discipline</code> (full) puis recharge la vue.</p>
+      </section>
+    `;
+  }
+
+  const controlSummary = report?.summary?.controls || {};
+  const ruleSummary = report?.summary?.rules || {};
+  const deviations = Array.isArray(report?.deviations) ? report.deviations : [];
+  const controls = Array.isArray(report?.controls) ? report.controls : [];
+  const sourceSummary = Array.isArray(report?.sourceSummary) ? report.sourceSummary : [];
+  const sourceCoverage = report?.sourceCoverage || {};
+  const repoGovernance = report?.repoGovernance || null;
+  const repoRows = Array.isArray(repoGovernance?.repos) ? repoGovernance.repos : [];
+  const repoSummary = repoGovernance?.summary || {};
+  const canonicalStatus = state.canonicalDataStatus;
+  const rootPrefix = "/Users/mohyi/atlas/";
+  const ruleSourceFiles = Array.isArray(sourceCoverage?.ruleSources)
+    ? sourceCoverage.ruleSources
+    : sourceSummary.map((row) => String(row.sourceFile || "")).filter(Boolean);
+  const controlOnlySources = Array.isArray(sourceCoverage?.controlOnlySources) ? sourceCoverage.controlOnlySources : [];
+  const overlapSources = Array.isArray(sourceCoverage?.overlapSources) ? sourceCoverage.overlapSources : [];
+  const sourceCounts = sourceCoverage?.counts || {};
+
+  const normalizePath = (value) => {
+    const text = String(value || "").trim();
+    if (!text) return "n/d";
+    return text.startsWith(rootPrefix) ? text.slice(rootPrefix.length) : text;
+  };
+
+  const statusBadge = (status) => {
+    const value = String(status || "warn").toLowerCase();
+    if (value === "pass") return "pass";
+    if (value === "fail") return "fail";
+    return "warn";
+  };
+
+  const modeLabel = String(report.mode || "quick");
+
+  return `
+    <section class="card discipline-summary">
+      <div class="section-head">
+        <h3>Discipline cockpit</h3>
+        <span class="badge ${modeLabel === "full" ? "pass" : "warn"}">${safe(modeLabel)}</span>
+      </div>
+      <div class="mono">Dernière génération: ${safe(formatMediumDate(report.generatedAt))} ${safe(formatShortTime(report.generatedAt))}</div>
+      <div class="mono">Données canoniques: ${canonicalStatus?.canonicalComplete ? "completes" : `degradees (${safe(canonicalMissingLabel(canonicalStatus))})`}</div>
+      <div class="discipline-kpi-grid">
+        <article class="discipline-kpi-card">
+          <h4>Contrôles</h4>
+          <div class="kpi">${Number(controlSummary.total || 0)}</div>
+          <div class="badge-row">
+            <span class="badge pass">pass ${Number(controlSummary.pass || 0)}</span>
+            <span class="badge fail">fail ${Number(controlSummary.fail || 0)}</span>
+            <span class="badge warn">warn ${Number(controlSummary.warn || 0)}</span>
+          </div>
+        </article>
+        <article class="discipline-kpi-card">
+          <h4>Règles inventoriées</h4>
+          <div class="kpi">${Number(ruleSummary.total || 0)}</div>
+          <div class="badge-row">
+            <span class="badge pass">pass ${Number(ruleSummary.pass || 0)}</span>
+            <span class="badge fail">fail ${Number(ruleSummary.fail || 0)}</span>
+            <span class="badge warn">warn ${Number(ruleSummary.warn || 0)}</span>
+            <span class="badge warn">manual ${Number(ruleSummary.manual || 0)}</span>
+          </div>
+        </article>
+        <article class="discipline-kpi-card">
+          <h4>Écarts détectés</h4>
+          <div class="kpi">${Number(report?.summary?.deviationCount || 0)}</div>
+          <div class="kpi-caption">Inclut fail/warn/manual avec source localisée</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="card discipline-po-playbook">
+      <div class="section-head">
+        <h3>Mode opératoire PO</h3>
+        <span class="badge ${deviations.length ? "warn" : "pass"}">${deviations.length ? "actions requises" : "stable"}</span>
+      </div>
+      <ol class="discipline-steps">
+        <li>Ouvrir l'onglet <strong>Discipline</strong>, cliquer <strong>Mettre à jour</strong> en haut de page, puis vérifier le timestamp de génération.</li>
+        <li>Lire d'abord <strong>Écarts localisés</strong> pour voir précisément le fichier, la ligne et le contrôle à corriger.</li>
+        <li>Traiter en priorité les statuts <span class="badge fail">fail</span>, puis <span class="badge warn">warn</span>, et convertir progressivement les règles <span class="badge warn">manual</span> en contrôles automatisés.</li>
+        <li>Relancer <code>npm run generate:discipline</code> (ou <code>npm run audit:discipline</code>) jusqu'à retour sans écart critique.</li>
+      </ol>
+      <div class="discipline-action-list">
+        ${
+          deviations.length
+            ? deviations
+                .slice(0, 3)
+                .map(
+                  (row) => `
+                    <div class="discipline-action-item">
+                      <span class="badge ${statusBadge(row.status)}">${safe(String(row.status || "warn").toUpperCase())}</span>
+                      <div>
+                        <div>${safe(row.text || "n/d")}</div>
+                        <div class="mono">${safe(normalizePath(row.sourceAbsolutePath || row.sourceFile))}:${Number(row.sourceLine || 0)}</div>
+                      </div>
+                    </div>
+                  `
+                )
+                .join("")
+            : '<div class="discipline-action-item"><span class="badge pass">PASS</span><div>Aucun écart actif détecté sur le rapport courant.</div></div>'
+        }
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <h3>Couverture multi-repos</h3>
+        <span class="badge ${repoGovernance?.available ? "pass" : "warn"}">${repoGovernance?.available ? "available" : "missing source"}</span>
+      </div>
+      ${
+        repoRows.length
+          ? `
+            <div class="discipline-kpi-grid">
+              <article class="discipline-kpi-card">
+                <h4>Repos suivis</h4>
+                <div class="kpi">${Number(repoSummary.total || 0)}</div>
+                <div class="kpi-caption">NEXORA, API, SCARABEE, MONITEUR, ABETCA, MCP</div>
+              </article>
+              <article class="discipline-kpi-card">
+                <h4>Statut gouvernance</h4>
+                <div class="badge-row">
+                  <span class="badge pass">pass ${Number(repoSummary.pass || 0)}</span>
+                  <span class="badge warn">warn ${Number(repoSummary.warn || 0)}</span>
+                  <span class="badge fail">fail ${Number(repoSummary.fail || 0)}</span>
+                </div>
+                <div class="kpi-caption">Baseline AGENTS + lessons + markers doctrine/linear</div>
+              </article>
+              <article class="discipline-kpi-card">
+                <h4>Écarts structurels</h4>
+                <div class="badge-row">
+                  <span class="badge fail">files ${Number(repoSummary.missingFilesCount || 0)}</span>
+                  <span class="badge warn">markers ${Number(repoSummary.markerGapCount || 0)}</span>
+                </div>
+                <div class="kpi-caption">Fichiers manquants ou AGENTS incomplet</div>
+              </article>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Repo</th>
+                  <th>Statut</th>
+                  <th>Fichiers requis</th>
+                  <th>Markers AGENTS</th>
+                  <th>Runtime</th>
+                  <th>Écarts</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${repoRows
+                  .map((row) => {
+                    const files = row.files || {};
+                    const markers = row.markers || {};
+                    const runtime = row.runtime || {};
+                    const missingFiles = Array.isArray(row.missingFiles) ? row.missingFiles : [];
+                    const markerGaps = Array.isArray(row.markerGaps) ? row.markerGaps : [];
+                    const action =
+                      row.status === "fail"
+                        ? "Créer les fichiers gouvernance manquants puis relancer l'audit."
+                        : row.status === "warn"
+                          ? "Compléter AGENTS (decision stack / linear / doctrine / local-first)."
+                          : "Conforme: garder les preuves et maintenir les gates.";
+                    return `
+                      <tr>
+                        <td>
+                          <strong>${safe(row.repo || "n/d")}</strong><br />
+                          <span class="mono">${safe(String(row.path || "n/d").replace(rootPrefix, ""))}</span>
+                        </td>
+                        <td><span class="badge ${statusBadge(row.status)}">${safe(row.status || "warn")}</span></td>
+                        <td>
+                          <span class="badge ${files.repoPathExists ? "pass" : "fail"}">path</span>
+                          <span class="badge ${files.agents ? "pass" : "fail"}">AGENTS</span>
+                          <span class="badge ${files.lessons ? "pass" : "fail"}">lessons</span>
+                        </td>
+                        <td>
+                          <span class="badge ${markers.decisionStack ? "pass" : "warn"}">decision-stack</span>
+                          <span class="badge ${markers.linear ? "pass" : "warn"}">linear</span>
+                          <span class="badge ${markers.doctrine ? "pass" : "warn"}">doctrine</span>
+                          <span class="badge ${markers.localFirst ? "pass" : "warn"}">local-first</span>
+                        </td>
+                        <td>
+                          <div class="mono">checks=${Number(runtime.validationCommands || 0)}</div>
+                          <div class="mono">tests=${Number(runtime.tests || 0)} · routes=${Number(runtime.routes || 0)} · risks=${Number(runtime.risks || 0)}</div>
+                        </td>
+                        <td>
+                          ${
+                            missingFiles.length || markerGaps.length
+                              ? `
+                                ${missingFiles.map((value) => `<div class="mono">${safe(`missing:${value}`)}</div>`).join("")}
+                                ${markerGaps.map((value) => `<div class="mono">${safe(`marker-gap:${value}`)}</div>`).join("")}
+                              `
+                              : '<span class="badge pass">none</span>'
+                          }
+                        </td>
+                        <td>${safe(action)}</td>
+                      </tr>
+                    `;
+                  })
+                  .join("")}
+              </tbody>
+            </table>
+          `
+          : '<p class="mono">Aucun signal multi-repo disponible (source atlas-data absente).</p>'
+      }
+    </section>
+
+    <section class="card">
+      <h3>Écarts localisés</h3>
+      ${
+        deviations.length
+          ? `
+            <table>
+              <thead>
+                <tr>
+                  <th>Statut</th>
+                  <th>Règle</th>
+                  <th>Localisation</th>
+                  <th>Contrôles liés</th>
+                  <th>Raison</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${deviations
+                  .slice(0, 40)
+                  .map((row) => {
+                    const linkedControls = Array.isArray(row.linkedControls) ? row.linkedControls : [];
+                    return `
+                      <tr>
+                        <td><span class="badge ${statusBadge(row.status)}">${safe(row.status)}</span></td>
+                        <td>${safe(row.text)}</td>
+                        <td class="mono">${safe(normalizePath(row.sourceAbsolutePath || row.sourceFile))}:${Number(row.sourceLine || 0)}</td>
+                        <td>
+                          ${linkedControls.length
+                            ? linkedControls
+                                .map(
+                                  (control) =>
+                                    `<span class="badge ${statusBadge(control.status)}">${safe(control.id)}</span>`
+                                )
+                                .join(" ")
+                            : '<span class="badge warn">non-couvert</span>'}
+                        </td>
+                        <td>${safe(row.statusReason || "n/d")}</td>
+                      </tr>
+                    `;
+                  })
+                  .join("")}
+              </tbody>
+            </table>
+          `
+          : '<p class="mono">Aucun écart détecté.</p>'
+      }
+    </section>
+
+    <section class="card">
+      <h3>Contrôles exécutés</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Contrôle</th>
+            <th>Statut</th>
+            <th>Détail</th>
+            <th>Commande / preuve</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${controls
+            .map((control) => {
+              const outputLines = Array.isArray(control.output) ? control.output.slice(-3) : [];
+              const evidence = Array.isArray(control.evidence) ? control.evidence.slice(0, 2) : [];
+              return `
+                <tr>
+                  <td>
+                    <strong>${safe(control.name || control.id)}</strong><br />
+                    <span class="mono">${safe(control.id)}</span>
+                  </td>
+                  <td><span class="badge ${statusBadge(control.status)}">${safe(control.status)}</span></td>
+                  <td>${safe(control.detail || "n/d")}</td>
+                  <td>
+                    ${control.command ? `<div class="mono">${safe(control.command)}</div>` : ""}
+                    ${evidence.map((pathValue) => `<div class="mono">${safe(normalizePath(pathValue))}</div>`).join("")}
+                    ${outputLines.map((line) => `<div class="mono">${safe(line)}</div>`).join("")}
+                  </td>
+                </tr>
+              `;
+            })
+            .join("")}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h3>Sources gouvernance</h3>
+      <div class="discipline-kpi-grid">
+        <article class="discipline-kpi-card">
+          <h4>Scannées comme règles</h4>
+          <div class="kpi">${Number(sourceCounts.ruleSources || ruleSourceFiles.length || 0)}</div>
+          <div class="kpi-caption">Extraction ligne-à-ligne des obligations de discipline</div>
+        </article>
+        <article class="discipline-kpi-card">
+          <h4>Couvertes aussi par contrôles</h4>
+          <div class="kpi">${Number(sourceCounts.overlap || overlapSources.length || 0)}</div>
+          <div class="kpi-caption">Même source utilisée en preuve d'exécution</div>
+        </article>
+        <article class="discipline-kpi-card">
+          <h4>Vérifiées sans scan règle</h4>
+          <div class="kpi">${Number(sourceCounts.controlOnly || controlOnlySources.length || 0)}</div>
+          <div class="kpi-caption">Présence/markers/gates, sans extraction textuelle</div>
+        </article>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Source scannée</th>
+            <th>Règles extraites</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sourceSummary
+            .map(
+              (row) => `
+                <tr>
+                  <td class="mono">${safe(normalizePath(row.sourceFile))}</td>
+                  <td>${Number(row.ruleCount || 0)}</td>
+                </tr>
+              `
+            )
+            .join("")}
+        </tbody>
+      </table>
+      ${
+        controlOnlySources.length
+          ? `
+            <div class="sources-note">
+              <div class="mono"><strong>Sources vérifiées par contrôles (non scannées comme règles):</strong></div>
+              ${controlOnlySources.map((value) => `<div class="mono">${safe(normalizePath(value))}</div>`).join("")}
+            </div>
+          `
+          : ""
+      }
+    </section>
+  `;
+}
+
 function renderDomainOwnership(data) {
   const ownership = Array.isArray(data.domainOwnership) ? data.domainOwnership : [];
   const scoreByDomain = new Map(architectureRows(data).map((row) => [String(row.domain).toLowerCase(), row.score]));
@@ -5185,6 +5551,9 @@ function renderView() {
     case "projections":
       html = renderDoctrineBanner() + guide + renderProjectionRegistry(data);
       break;
+    case "discipline":
+      html = renderDoctrineBanner() + guide + renderDisciplineDashboard();
+      break;
     case "domains":
       html =
         renderDoctrineBanner() +
@@ -5535,6 +5904,12 @@ async function loadAuditIndex() {
   return await response.json();
 }
 
+async function loadDisciplineReport() {
+  const response = await fetch("./data/history/atlas-discipline-report.json", { cache: "no-store" });
+  if (!response.ok) throw new Error(`Failed to load discipline report: ${response.status}`);
+  return await response.json();
+}
+
 async function loadSnapshot(relativePath) {
   const response = await fetch(`./data/${relativePath}`, { cache: "no-store" });
   if (!response.ok) throw new Error(`Failed to load snapshot: ${response.status}`);
@@ -5577,6 +5952,11 @@ async function reloadDataIntoState() {
     state.auditIndex = await loadAuditIndex();
   } catch {
     state.auditIndex = null;
+  }
+  try {
+    state.disciplineReport = await loadDisciplineReport();
+  } catch {
+    state.disciplineReport = null;
   }
   try {
     state.serviceOpsReport = await loadServiceOpsReport();

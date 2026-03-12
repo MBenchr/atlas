@@ -692,6 +692,72 @@ body.help-mode .explainable:hover {
   background: #4b2521;
 }
 
+.discipline-summary {
+  margin-bottom: 12px;
+}
+
+.discipline-kpi-grid {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.discipline-kpi-card {
+  border: 1px solid #2b4f5d;
+  border-radius: 8px;
+  background: #132e39;
+  padding: 10px;
+}
+
+.discipline-kpi-card h4 {
+  margin: 0 0 8px;
+  color: #c8dde6;
+  font-size: 0.84rem;
+}
+
+.discipline-po-playbook {
+  margin-bottom: 12px;
+}
+
+.discipline-steps {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.discipline-steps li {
+  color: #cfe2ea;
+  line-height: 1.45;
+}
+
+.discipline-action-list {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.discipline-action-item {
+  border: 1px solid #2b4f5d;
+  border-radius: 8px;
+  background: #102731;
+  padding: 8px 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.sources-note {
+  margin-top: 10px;
+  border: 1px dashed #355666;
+  border-radius: 8px;
+  background: #102630;
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+}
+
 .score-bar {
   margin-top: 8px;
   height: 8px;
@@ -1754,6 +1820,7 @@ th {
   .top-actions-grid,
   .domain-master-grid,
   .correlation-grid,
+  .discipline-kpi-grid,
   .portfolio-sparkline-grid,
   .portfolio-reference-grid,
   .alert-queue,

@@ -52,8 +52,9 @@ export function summarizeGlobalStatus(datasetStatuses) {
 }
 
 export function buildFreshnessContract({ datasets, slaHours = DEFAULT_FRESHNESS_SLA_HOURS, generatedAt = new Date().toISOString() }) {
+  const referenceNowMs = parseIsoTimestamp(generatedAt)?.timestamp ?? Date.now();
   const normalizedRows = (datasets || []).map((dataset) => {
-    const ageHours = computeAgeHours(dataset.generatedAt);
+    const ageHours = computeAgeHours(dataset.generatedAt, referenceNowMs);
     const status = freshnessStatusFromAge(ageHours, slaHours);
     return {
       dataset: String(dataset.dataset || ''),

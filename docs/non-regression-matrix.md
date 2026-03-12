@@ -28,6 +28,22 @@ cd /Users/mohyi/atlas
 npm run check
 ```
 
+## Discipline dashboard execution
+
+Generate the unified discipline report (rules + controls + localized deviations):
+
+```bash
+cd /Users/mohyi/atlas
+npm run generate:discipline
+```
+
+Run a full discipline audit including E2E gate execution:
+
+```bash
+cd /Users/mohyi/atlas
+npm run audit:discipline
+```
+
 ## CI execution
 
 Workflow:

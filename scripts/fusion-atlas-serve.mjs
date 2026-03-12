@@ -19,6 +19,7 @@ const POST_SYNC_ATLAS_SCRIPTS = [
   "generate:alerts",
   "generate:trends",
   "generate:audit",
+  "generate:discipline",
 ];
 
 const MIME = {

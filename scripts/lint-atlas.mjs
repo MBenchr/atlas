@@ -12,6 +12,7 @@ const REQUIRED_PATHS = [
   'docs/atlas-execution-board.md',
   'docs/data-contracts.md',
   'docs/atlas-data-contracts.md',
+  'docs/discipline-dashboard.md',
   'docs/projection-registry.md',
   'docs/consumer-contract-matrix.md',
   'docs/non-regression-matrix.md',
@@ -45,9 +46,10 @@ const REQUIRED_PATHS = [
   'data/contracts/manifest.json',
   'data/history/atlas-audit-index.json',
   'scripts/generate-audit-index.mjs',
+  'scripts/generate-discipline-report.mjs',
   'scripts/validate-atlas-contracts.mjs',
   'scripts/lint-canonical-guardrails.mjs',
-  'scripts/lib/service-ops-guardrails.mjs'
+  'scripts/lib/service-ops-guardrails.mjs',
 ];
 
 async function assertExists(relativePath) {
